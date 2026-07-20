@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>週間こんだてメーカー 🍚</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <h1>🍚 週間こんだてメーカー</h1>
+      <p class="tagline">次の週の天気に合わせて、1週間の晩ごはんを自動で提案します</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <div id="summary" class="summary"></div>
+      <div class="actions">
+        <button id="btn-regen" class="btn">別の献立にする 🎲</button>
+        <button id="btn-shopping" class="btn">買い物リスト 🛒</button>
+        <button id="btn-settings" class="btn ghost">設定 ⚙️</button>
+      </div>
+    </div>
+
+    <div id="status" class="status"></div>
+    <section id="plan" class="grid"></section>
+    <section id="shopping" class="shopping hidden"></section>
+
+    <p class="credit">天気データ: Open-Meteo（無料・キー不要）</p>
+  </main>
+
+  <!-- 設定モーダル -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-box">
+      <h2>設定 ⚙️</h2>
+
+      <label>地域（天気予報）
+        <select id="s-city"></select>
+      </label>
+
+      <div class="row">
+        <label>大人の人数
+          <input id="s-adults" type="number" min="0" max="12" value="2">
+        </label>
+        <label>子供の人数
+          <input id="s-kids" type="number" min="0" max="12" value="3">
+        </label>
+      </div>
+
+      <label class="check">
+        <input id="s-stamina" type="checkbox" checked>
+        育ち盛り・運動する子向けにスタミナ多め
+      </label>
+
+      <label>アレルギー（除外する食材・カンマ区切り）
+        <input id="s-allergies" type="text" placeholder="例: えび, そば">
+      </label>
+
+      <label>苦手な食材（カンマ区切り）
+        <input id="s-dislikes" type="text" placeholder="例: なす, ピーマン">
+      </label>
+
+      <div class="modal-actions">
+        <button id="btn-close" class="btn ghost">キャンセル</button>
+        <button id="btn-apply" class="btn">保存して更新</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/meals.js"></script>
+  <script src="js/weather.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
