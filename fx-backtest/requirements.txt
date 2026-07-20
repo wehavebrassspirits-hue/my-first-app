@@ -1,0 +1,5 @@
+# fxbt core has zero runtime dependencies (Python 3.9+ standard library only).
+# Optional extras for future work (plotting / faster vectorized backtests):
+# numpy
+# pandas
+# matplotlib
