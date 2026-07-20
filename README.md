@@ -26,6 +26,23 @@
 - 天気の取得時のみ、選択した地域のおおよその緯度経度が Open-Meteo に送られます。
 - そのため、ソースコードや公開ページに個人情報は一切含まれません。
 
+## 公開URL（GitHub Pages）
+
+スマホから使うには GitHub Pages で公開します。リポジトリは公開設定で、
+既定ブランチ（`claude/test-60u2ve`）のルートに `index.html` があるため、
+設定を一度オンにするだけで配信できます。
+
+**有効化の手順（1回だけ）**
+1. GitHub でこのリポジトリを開く
+2. **Settings → Pages**
+3. **Build and deployment → Source** を「**Deploy from a branch**」に
+4. Branch を **`claude/test-60u2ve`** ／ フォルダ **`/ (root)`** にして **Save**
+5. 1分ほど待つと公開URLが表示されます：
+   `https://wehavebrassspirits-hue.github.io/my-first-app/`
+
+iPhone は Safari で上記URLを開き、共有 →「**ホーム画面に追加**」で
+アプリのように使えます。`.nojekyll` を置いているため、ファイルはそのまま配信されます。
+
 ## 使い方
 
 ### いちばん簡単な方法
