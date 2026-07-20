@@ -6,6 +6,8 @@
 // spicy: 辛い（子供には甘口対応の注記に使用）
 // allergens: 主なアレルゲン（除外フィルタ用）
 // ingredients: 主な買い物リスト用材料
+// q: (任意) クックパッド検索キーワード。「◯◯と◯◯」等の複合名で
+//    そのまま検索すると0件になる献立に、主菜1品のキーワードを指定する。
 
 const MENUS = [
   // ── 和食・定食（焼き魚・煮魚・煮物） ─────────────────────
@@ -24,13 +26,13 @@ const MENUS = [
   { id: 13, name: "たらのホイル焼き", items: ["たらのホイル焼き", "温野菜", "ごはん・スープ"], temp: ["cold","mild"], rainOk: true, effort: 2, stamina: 1, spicy: false, allergens: ["乳"], ingredients: ["たら","しめじ","玉ねぎ","バター","ブロッコリー","米"] },
   { id: 14, name: "ほっけの開き定食", items: ["ほっけの開き", "冷奴", "ごはん・味噌汁"], temp: ["mild","cold"], rainOk: true, effort: 2, stamina: 1, spicy: false, allergens: ["大豆"], ingredients: ["ほっけ","大根","豆腐","米","味噌"] },
   { id: 15, name: "いか大根", items: ["いか大根", "ほうれん草のおひたし", "ごはん・味噌汁"], temp: ["cold"], rainOk: true, effort: 2, stamina: 1, spicy: false, allergens: [], ingredients: ["いか","大根","しょうが","しょうゆ","ほうれん草","米"] },
-  { id: 16, name: "あさりの酒蒸しとごはん", items: ["あさりの酒蒸し", "だし巻き卵", "ごはん・味噌汁"], temp: ["mild","hot"], rainOk: true, effort: 1, stamina: 1, spicy: false, allergens: ["卵"], ingredients: ["あさり","酒","にんにく","卵","米","味噌"] },
+  { id: 16, name: "あさりの酒蒸しとごはん", q: "あさりの酒蒸し", items: ["あさりの酒蒸し", "だし巻き卵", "ごはん・味噌汁"], temp: ["mild","hot"], rainOk: true, effort: 1, stamina: 1, spicy: false, allergens: ["卵"], ingredients: ["あさり","酒","にんにく","卵","米","味噌"] },
   { id: 17, name: "肉じゃが定食", items: ["肉じゃが", "焼き魚(さば)", "ごはん・味噌汁"], temp: ["cold","mild"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: [], ingredients: ["豚こま肉","じゃがいも","にんじん","玉ねぎ","さば","味噌","米"] },
   { id: 18, name: "筑前煮", items: ["筑前煮", "だし巻き卵", "ごはん・味噌汁"], temp: ["cold","mild"], rainOk: true, effort: 2, stamina: 1, spicy: false, allergens: ["卵"], ingredients: ["鶏もも肉","れんこん","にんじん","ごぼう","こんにゃく","卵","米"] },
   { id: 19, name: "豚の角煮", items: ["豚の角煮", "青梗菜の炒め", "ごはん・味噌汁"], temp: ["cold"], rainOk: true, effort: 3, stamina: 3, spicy: false, allergens: ["大豆"], ingredients: ["豚バラブロック","しょうが","長ねぎ","しょうゆ","青梗菜","米"] },
   { id: 20, name: "鶏の照り焼き", items: ["鶏の照り焼き", "きんぴらごぼう", "ごはん・味噌汁"], temp: ["mild","cold"], rainOk: true, effort: 1, stamina: 2, spicy: false, allergens: [], ingredients: ["鶏もも肉","しょうゆ","みりん","ごぼう","にんじん","米"] },
   { id: 21, name: "豚汁定食", items: ["鮭の塩焼き", "具だくさん豚汁", "ごはん・小鉢"], temp: ["cold"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: [], ingredients: ["生鮭","豚こま肉","大根","にんじん","ごぼう","こんにゃく","味噌","米"] },
-  { id: 22, name: "厚揚げと豚の炒め", items: ["厚揚げと豚肉の甘辛炒め", "もやしナムル", "ごはん・味噌汁"], temp: ["mild","cold"], rainOk: true, effort: 1, stamina: 2, spicy: false, allergens: ["大豆"], ingredients: ["厚揚げ","豚こま肉","ピーマン","もやし","しょうゆ","米"] },
+  { id: 22, name: "厚揚げと豚の炒め", q: "厚揚げ 豚", items: ["厚揚げと豚肉の甘辛炒め", "もやしナムル", "ごはん・味噌汁"], temp: ["mild","cold"], rainOk: true, effort: 1, stamina: 2, spicy: false, allergens: ["大豆"], ingredients: ["厚揚げ","豚こま肉","ピーマン","もやし","しょうゆ","米"] },
 
   // ── 揚げ物 ───────────────────────────────────────────
   { id: 23, name: "鶏の唐揚げ定食", items: ["鶏の唐揚げ", "千切りキャベツ・レモン", "ごはん・味噌汁"], temp: ["mild","hot"], rainOk: false, effort: 2, stamina: 3, spicy: false, allergens: ["小麦"], ingredients: ["鶏もも肉","にんにく","しょうが","片栗粉","キャベツ","米"] },
@@ -63,7 +65,7 @@ const MENUS = [
   { id: 48, name: "ハヤシライス", items: ["ハヤシライス", "コールスロー", "福神漬け"], temp: ["cold","mild"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: ["小麦"], ingredients: ["牛薄切り肉","玉ねぎ","マッシュルーム","ハヤシルウ","米"] },
   { id: 49, name: "ビーフストロガノフ", items: ["ビーフストロガノフ", "バターライス", "サラダ"], temp: ["cold"], rainOk: true, effort: 3, stamina: 3, spicy: false, allergens: ["乳","小麦"], ingredients: ["牛薄切り肉","玉ねぎ","マッシュルーム","サワークリーム","デミ","米"] },
   { id: 50, name: "ポトフ", items: ["具だくさんポトフ", "バゲット", "チーズ"], temp: ["cold"], rainOk: true, effort: 2, stamina: 1, spicy: false, allergens: ["乳","小麦"], ingredients: ["ソーセージ","キャベツ","じゃがいも","にんじん","玉ねぎ","コンソメ"] },
-  { id: 51, name: "ミネストローネと厚切りトースト", items: ["ミネストローネ", "厚切りトースト", "オムレツ"], temp: ["cold","mild"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: ["小麦","卵"], ingredients: ["ベーコン","トマト缶","キャベツ","じゃがいも","食パン","卵"] },
+  { id: 51, name: "ミネストローネと厚切りトースト", q: "ミネストローネ", items: ["ミネストローネ", "厚切りトースト", "オムレツ"], temp: ["cold","mild"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: ["小麦","卵"], ingredients: ["ベーコン","トマト缶","キャベツ","じゃがいも","食パン","卵"] },
   { id: 52, name: "タンドリーチキン", items: ["タンドリーチキン", "ナン or ごはん", "サラダ"], temp: ["mild","hot"], rainOk: true, effort: 2, stamina: 3, spicy: true, allergens: ["乳"], ingredients: ["鶏もも肉","ヨーグルト","カレー粉","にんにく","ナン","米"] },
 
   // ── カレー ───────────────────────────────────────────
@@ -138,7 +140,7 @@ const MENUS = [
   { id: 113, name: "トマトクリームパスタ", items: ["海老のトマトクリームパスタ", "コンソメスープ", "サラダ"], temp: ["mild","cold"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: ["小麦","乳","えび"], ingredients: ["えび","トマト缶","生クリーム","玉ねぎ","スパゲッティ"] },
   { id: 114, name: "ジェノベーゼ", items: ["ジェノベーゼパスタ", "コンソメスープ", "サラダ"], temp: ["hot","mild"], rainOk: true, effort: 1, stamina: 1, spicy: false, allergens: ["小麦","乳"], ingredients: ["バジルソース","じゃがいも","スパゲッティ","粉チーズ","にんにく"] },
   { id: 115, name: "冷製トマトパスタ", items: ["冷製トマトパスタ", "コーンスープ", "サラダ"], temp: ["hot"], rainOk: true, effort: 1, stamina: 1, spicy: false, allergens: ["小麦"], ingredients: ["トマト","にんにく","オリーブオイル","バジル","スパゲッティ"] },
-  { id: 116, name: "味噌ラーメンと餃子", items: ["味噌ラーメン", "焼き餃子", "メンマ"], temp: ["cold"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: ["小麦"], ingredients: ["中華麺","もやし","コーン","豚ひき肉","餃子","味噌だれ"] },
+  { id: 116, name: "味噌ラーメンと餃子", q: "味噌ラーメン", items: ["味噌ラーメン", "焼き餃子", "メンマ"], temp: ["cold"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: ["小麦"], ingredients: ["中華麺","もやし","コーン","豚ひき肉","餃子","味噌だれ"] },
   { id: 117, name: "醤油ラーメン", items: ["醤油ラーメン", "チャーシュー", "煮卵"], temp: ["cold"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: ["小麦","卵"], ingredients: ["中華麺","チャーシュー","メンマ","煮卵","長ねぎ","醤油だれ"] },
   { id: 118, name: "タンメン", items: ["タンメン", "焼売", "ザーサイ"], temp: ["cold","mild"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: ["小麦"], ingredients: ["中華麺","キャベツ","もやし","豚肉","にんじん","焼売"] },
   { id: 119, name: "ちゃんぽん", items: ["長崎ちゃんぽん", "餃子", "ザーサイ"], temp: ["cold"], rainOk: true, effort: 2, stamina: 3, spicy: false, allergens: ["小麦","えび"], ingredients: ["ちゃんぽん麺","豚肉","えび","キャベツ","もやし","かまぼこ"] },
@@ -163,21 +165,21 @@ const MENUS = [
 
   // ── 夏の冷たい麺・さっぱり ───────────────────────────
   { id: 136, name: "冷やし中華", items: ["冷やし中華(具だくさん)", "餃子", "わかめスープ"], temp: ["hot"], rainOk: false, effort: 2, stamina: 2, spicy: false, allergens: ["小麦","卵"], ingredients: ["中華麺","きゅうり","ハム","卵","トマト","冷やし中華のたれ"] },
-  { id: 137, name: "そうめんと天ぷら", items: ["薬味そうめん", "野菜と海老の天ぷら", "枝豆"], temp: ["hot"], rainOk: false, effort: 2, stamina: 1, spicy: false, allergens: ["小麦","えび"], ingredients: ["そうめん","えび","なす","かぼちゃ","みょうが","めんつゆ","枝豆"] },
+  { id: 137, name: "そうめんと天ぷら", q: "そうめん", items: ["薬味そうめん", "野菜と海老の天ぷら", "枝豆"], temp: ["hot"], rainOk: false, effort: 2, stamina: 1, spicy: false, allergens: ["小麦","えび"], ingredients: ["そうめん","えび","なす","かぼちゃ","みょうが","めんつゆ","枝豆"] },
   { id: 138, name: "ざるそば", items: ["ざるそば", "天ぷら", "だし巻き卵"], temp: ["hot"], rainOk: false, effort: 2, stamina: 1, spicy: false, allergens: ["そば","小麦","えび","卵"], ingredients: ["そば","えび","なす","卵","めんつゆ","薬味ねぎ"] },
   { id: 139, name: "ぶっかけうどん", items: ["冷やしぶっかけうどん", "天かす・薬味", "だし巻き卵"], temp: ["hot"], rainOk: false, effort: 1, stamina: 1, spicy: false, allergens: ["小麦","卵"], ingredients: ["うどん","めんつゆ","天かす","大根おろし","卵","刻みねぎ"] },
   { id: 140, name: "サラダうどん", items: ["冷やしサラダうどん", "ツナと野菜", "冷奴"], temp: ["hot"], rainOk: false, effort: 1, stamina: 1, spicy: false, allergens: ["小麦","大豆"], ingredients: ["うどん","ツナ","レタス","トマト","豆腐","めんつゆ"] },
   { id: 141, name: "冷やし担々麺", items: ["冷やし担々麺", "ザーサイ", "ミニチャーハン"], temp: ["hot"], rainOk: false, effort: 2, stamina: 2, spicy: true, allergens: ["小麦","大豆"], ingredients: ["中華麺","豚ひき肉","きゅうり","練りごま","ラー油","米"] },
-  { id: 142, name: "ざるうどんと唐揚げ", items: ["ざるうどん", "鶏の唐揚げ", "冷やしトマト"], temp: ["hot"], rainOk: false, effort: 2, stamina: 3, spicy: false, allergens: ["小麦"], ingredients: ["うどん","鶏もも肉","片栗粉","トマト","めんつゆ","薬味ねぎ"] },
+  { id: 142, name: "ざるうどんと唐揚げ", q: "ざるうどん", items: ["ざるうどん", "鶏の唐揚げ", "冷やしトマト"], temp: ["hot"], rainOk: false, effort: 2, stamina: 3, spicy: false, allergens: ["小麦"], ingredients: ["うどん","鶏もも肉","片栗粉","トマト","めんつゆ","薬味ねぎ"] },
   { id: 143, name: "冷しゃぶサラダ", items: ["豚冷しゃぶサラダ", "冷奴", "ごはん・味噌汁"], temp: ["hot"], rainOk: false, effort: 1, stamina: 2, spicy: false, allergens: ["大豆"], ingredients: ["豚しゃぶ肉","レタス","きゅうり","トマト","豆腐","ごまだれ","米"] },
   { id: 144, name: "蒸し鶏の香味だれ", items: ["蒸し鶏の香味だれ", "春雨サラダ", "ごはん・スープ"], temp: ["hot","mild"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: [], ingredients: ["鶏むね肉","長ねぎ","しょうが","きゅうり","春雨","米"] },
   { id: 145, name: "なす味噌炒め", items: ["なすと豚の味噌炒め", "冷奴", "ごはん・味噌汁"], temp: ["mild","hot"], rainOk: true, effort: 1, stamina: 2, spicy: false, allergens: ["大豆"], ingredients: ["なす","豚こま肉","ピーマン","味噌","豆腐","米"] },
-  { id: 146, name: "冷やしトマトと餃子", items: ["焼き餃子", "冷やしトマト", "わかめスープ"], temp: ["hot"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: ["小麦"], ingredients: ["豚ひき肉","キャベツ","にら","餃子の皮","トマト","米"] },
+  { id: 146, name: "冷やしトマトと餃子", q: "餃子", items: ["焼き餃子", "冷やしトマト", "わかめスープ"], temp: ["hot"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: ["小麦"], ingredients: ["豚ひき肉","キャベツ","にら","餃子の皮","トマト","米"] },
 
   // ── 寿司・イベント・粉物 ─────────────────────────────
   { id: 147, name: "手巻き寿司", items: ["手巻き寿司", "茶碗蒸し", "お吸い物"], temp: ["hot","mild"], rainOk: true, effort: 2, stamina: 1, spicy: false, allergens: ["卵"], ingredients: ["刺身盛り合わせ","きゅうり","納豆","卵","焼きのり","米","寿司酢"] },
   { id: 148, name: "ちらし寿司", items: ["ちらし寿司", "お吸い物", "だし巻き卵"], temp: ["hot","mild"], rainOk: true, effort: 2, stamina: 1, spicy: false, allergens: ["卵","えび"], ingredients: ["刺身","えび","れんこん","絹さや","卵","米","寿司酢"] },
-  { id: 149, name: "いなり寿司と天ぷら", items: ["いなり寿司", "野菜天ぷら", "お吸い物"], temp: ["mild","hot"], rainOk: false, effort: 2, stamina: 1, spicy: false, allergens: ["大豆","小麦"], ingredients: ["油揚げ","米","かぼちゃ","なす","ちくわ","天ぷら粉"] },
+  { id: 149, name: "いなり寿司と天ぷら", q: "いなり寿司", items: ["いなり寿司", "野菜天ぷら", "お吸い物"], temp: ["mild","hot"], rainOk: false, effort: 2, stamina: 1, spicy: false, allergens: ["大豆","小麦"], ingredients: ["油揚げ","米","かぼちゃ","なす","ちくわ","天ぷら粉"] },
   { id: 150, name: "おうちたこ焼き", items: ["たこ焼き", "焼きそば", "枝豆"], temp: ["hot","mild"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: ["小麦","卵"], ingredients: ["たこ","たこ焼き粉","卵","キャベツ","青ねぎ","焼きそば麺","枝豆"] },
   { id: 151, name: "お好み焼き", items: ["豚玉お好み焼き", "焼きそば", "わかめスープ"], temp: ["mild","cold"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: ["小麦","卵","えび"], ingredients: ["豚バラ肉","キャベツ","お好み焼き粉","卵","天かす","青のり"] },
   { id: 152, name: "もんじゃ焼き", items: ["もんじゃ焼き", "焼きそば", "枝豆"], temp: ["mild"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: ["小麦","えび"], ingredients: ["キャベツ","豚肉","切りいか","もんじゃ粉","天かす","ソース"] },
@@ -187,8 +189,8 @@ const MENUS = [
   { id: 156, name: "BBQ風グリルプレート", items: ["グリルチキン・ソーセージ", "グリル野菜", "ガーリックライス"], temp: ["hot","mild"], rainOk: false, effort: 2, stamina: 3, spicy: false, allergens: [], ingredients: ["鶏もも肉","ソーセージ","パプリカ","ズッキーニ","にんにく","米"] },
 
   // ── その他ごはんもの ─────────────────────────────────
-  { id: 157, name: "とうもろこしごはんと焼き魚", items: ["とうもろこしごはん", "鮭の塩焼き", "味噌汁"], temp: ["hot","mild"], rainOk: true, effort: 2, stamina: 1, spicy: false, allergens: [], ingredients: ["とうもろこし","米","生鮭","小松菜","味噌"] },
-  { id: 158, name: "炊き込みごはんと唐揚げ", items: ["きのこ炊き込みごはん", "鶏の唐揚げ", "味噌汁"], temp: ["mild","cold"], rainOk: false, effort: 2, stamina: 3, spicy: false, allergens: ["小麦"], ingredients: ["米","しめじ","にんじん","鶏もも肉","片栗粉","油揚げ"] },
+  { id: 157, name: "とうもろこしごはんと焼き魚", q: "とうもろこしごはん", items: ["とうもろこしごはん", "鮭の塩焼き", "味噌汁"], temp: ["hot","mild"], rainOk: true, effort: 2, stamina: 1, spicy: false, allergens: [], ingredients: ["とうもろこし","米","生鮭","小松菜","味噌"] },
+  { id: 158, name: "炊き込みごはんと唐揚げ", q: "炊き込みごはん", items: ["きのこ炊き込みごはん", "鶏の唐揚げ", "味噌汁"], temp: ["mild","cold"], rainOk: false, effort: 2, stamina: 3, spicy: false, allergens: ["小麦"], ingredients: ["米","しめじ","にんじん","鶏もも肉","片栗粉","油揚げ"] },
   { id: 159, name: "ビビンバ丼(そぼろ)", items: ["ビビンバ丼", "わかめスープ", "キムチ"], temp: ["hot","mild"], rainOk: true, effort: 1, stamina: 3, spicy: true, allergens: ["卵","大豆"], ingredients: ["牛ひき肉","もやし","ほうれん草","にんじん","卵","コチュジャン","米"] },
   { id: 160, name: "オムハヤシ", items: ["オムハヤシ", "コンソメスープ", "サラダ"], temp: ["cold","mild"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: ["卵","小麦"], ingredients: ["卵","牛薄切り肉","玉ねぎ","ハヤシルウ","米"] },
 ];

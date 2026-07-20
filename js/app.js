@@ -182,7 +182,7 @@ function cardHTML(p, i) {
         <span class="hi">${w.max}°</span><span class="lo">${w.min}°</span>
         ${w.pop != null ? `<span class="pop">☔${w.pop}%</span>` : ""}
       </div>
-      <a class="menu-name menu-link" href="${cookpadUrl(p.menu.name)}" target="_blank" rel="noopener noreferrer">${p.menu.name}${p.menu.spicy ? " 🌶️" : ""}<span class="cook-ic" aria-hidden="true"> 🔍</span></a>
+      <a class="menu-name menu-link" href="${cookpadUrl(p.menu.q || p.menu.name)}" target="_blank" rel="noopener noreferrer">${p.menu.name}${p.menu.spicy ? " 🌶️" : ""}<span class="cook-ic" aria-hidden="true"> 🔍</span></a>
       <ul class="items">${p.menu.items.map((it) => `<li><a href="${cookpadUrl(it)}" target="_blank" rel="noopener noreferrer">${it}</a></li>`).join("")}</ul>
       <div class="reason">${p.reason}</div>
       <div class="effort">
