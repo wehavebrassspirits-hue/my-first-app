@@ -59,6 +59,30 @@
         育ち盛り・運動する子向けにスタミナ多め
       </label>
 
+      <div class="section-label">料理スタイル</div>
+      <div class="row">
+        <label>平日はどれくらい手をかける？
+          <select id="s-weekday">
+            <option value="1">楽ちん（時短したい）</option>
+            <option value="2" selected>ふつう</option>
+            <option value="3">しっかり作りたい</option>
+          </select>
+        </label>
+        <label>週末はどれくらい手をかける？
+          <select id="s-weekend">
+            <option value="1">楽ちん（時短したい）</option>
+            <option value="2">ふつう</option>
+            <option value="3" selected>しっかり作りたい</option>
+          </select>
+        </label>
+      </div>
+
+      <label class="check">
+        <input id="s-prep" type="checkbox">
+        週末に作り置きして、平日はサッと済ませたい
+      </label>
+      <p class="field-hint">※ここで決めた手のかけ具合が、各曜日の「手間レベル」スライダーの初期位置になります。あとから曜日ごとに調整できます。</p>
+
       <label>アレルギー（除外する食材・カンマ区切り）
         <input id="s-allergies" type="text" placeholder="例: えび, そば">
       </label>
