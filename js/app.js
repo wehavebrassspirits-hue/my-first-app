@@ -377,7 +377,10 @@ function renderPrep() {
 
   const setCards = set.map((m) => `
     <div class="prep-card ${m.type}">
-      <div class="prep-type">${m.type === "main" ? "主菜" : "副菜"}</div>
+      <div class="prep-top">
+        <span class="prep-type">${m.type === "main" ? "主菜" : "副菜"}</span>
+        <button class="prep-item-reroll" data-id="${m.id}" title="この作り置きを別のものに更新">更新 🔄</button>
+      </div>
       ${menuTitleHTML(m)}
       <div class="keep">${keepText(m).map((t) => `<span class="keep-badge">${t}</span>`).join("")}</div>
       <div class="prep-ing">${m.ingredients.join("・")}</div>
@@ -409,6 +412,35 @@ function renderPrep() {
   el.querySelectorAll(".prep-reroll").forEach((btn) => {
     btn.addEventListener("click", () => rerollPrepDay(Number(btn.dataset.idx)));
   });
+  el.querySelectorAll(".prep-item-reroll").forEach((btn) => {
+    btn.addEventListener("click", () => rerollPrepItem(btn.dataset.id));
+  });
+}
+
+// 作り置き1品だけを別のもの（同じ主菜/副菜）に差し替える。使っている平日にも反映
+function rerollPrepItem(id) {
+  if (!prepPlan) return;
+  const k = prepPlan.set.findIndex((x) => x.id === id);
+  if (k < 0) return;
+  const cur = prepPlan.set[k];
+  const setIds = new Set(prepPlan.set.map((x) => x.id));
+  let pool = PREP_MENUS.filter((m) => m.type === cur.type && passesFamily(m) && !setIds.has(m.id));
+  if (!pool.length) pool = PREP_MENUS.filter((m) => m.type === cur.type && passesFamily(m) && m.id !== cur.id);
+  if (!pool.length) return;
+  const rng = seededRandom(`prepitem-${id}-${Date.now()}-${Math.random()}`);
+  const weighted = [];
+  for (const m of pool) {
+    let w = 1;
+    if (settings.staminaBoost && m.type === "main") w += (m.stamina - 1) * 1.2;
+    for (let j = 0; j < Math.max(1, Math.round(w)); j++) weighted.push(m);
+  }
+  const next = weighted[Math.floor(rng() * weighted.length)] || pool[0];
+  prepPlan.set[k] = next;
+  prepPlan.week.forEach((d) => {
+    if (d.main && d.main.id === cur.id) d.main = next;
+    if (d.side && d.side.id === cur.id) d.side = next;
+  });
+  renderPrep();
 }
 
 // 平日1日だけ組み合わせを変える（作り置きの中で主菜・副菜・汁物を入れ替え）

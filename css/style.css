@@ -212,7 +212,15 @@ main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 60px; }
   padding: 14px; box-shadow: var(--shadow); border-left: 4px solid var(--accent);
 }
 .prep-card.side { border-left-color: var(--leaf, #6b8e4e); }
-.prep-type { font-size: .74rem; font-weight: 700; color: var(--sub); margin-bottom: 2px; }
+.prep-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
+.prep-type { font-size: .74rem; font-weight: 700; color: var(--sub); }
+.prep-item-reroll {
+  border: 1px solid var(--accent); background: #fff; color: var(--accent);
+  border-radius: 999px; padding: 4px 11px; font-size: .78rem; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: filter .15s;
+}
+.prep-item-reroll:hover { background: var(--accent); color: #fff; }
+.prep-item-reroll:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 2px; }
 .keep { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 8px; }
 .keep-badge {
   background: #f3ede1; color: #8a7a52; font-size: .72rem; font-weight: 700;
