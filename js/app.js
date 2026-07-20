@@ -383,7 +383,7 @@ function renderPrep() {
       <div class="prep-ing">${m.ingredients.join("・")}</div>
     </div>`).join("");
 
-  const weekRows = week.map((d) => `
+  const weekRows = week.map((d, i) => `
     <div class="assemble-row">
       <span class="aday">${d.day}</span>
       <span class="ameal">
@@ -391,6 +391,7 @@ function renderPrep() {
         <span class="plus">＋</span>${d.side ? d.side.name : ""}
         <span class="plus">＋</span>${d.soup}<span class="plus">＋</span>ごはん
       </span>
+      <button class="prep-reroll" data-idx="${i}" title="この日の組み合わせを変える">変更 🔄</button>
     </div>`).join("");
 
   el.innerHTML = `
@@ -404,6 +405,29 @@ function renderPrep() {
     <div class="assemble">${weekRows}</div>
     <p class="prep-note">※日持ちは目安です。清潔な容器・箸で取り分け、早めに食べ切ってください。土日は仕込み＆好きなものを。</p>
   `;
+
+  el.querySelectorAll(".prep-reroll").forEach((btn) => {
+    btn.addEventListener("click", () => rerollPrepDay(Number(btn.dataset.idx)));
+  });
+}
+
+// 平日1日だけ組み合わせを変える（作り置きの中で主菜・副菜・汁物を入れ替え）
+function rerollPrepDay(idx) {
+  if (!prepPlan) return;
+  const mains = prepPlan.set.filter((m) => m.type === "main");
+  const sides = prepPlan.set.filter((m) => m.type === "side");
+  const cur = prepPlan.week[idx];
+  const rng = seededRandom(`prepday-${idx}-${Date.now()}-${Math.random()}`);
+  const pickDiff = (arr, curItem) => {
+    if (arr.length <= 1) return arr[0] || null;
+    let c, g = 0;
+    do { c = arr[Math.floor(rng() * arr.length)]; g++; } while (curItem && c && c.id === curItem.id && g < 20);
+    return c;
+  };
+  let soup = cur.soup, g = 0;
+  while (soup === cur.soup && QUICK_SOUPS.length > 1 && g < 20) { soup = QUICK_SOUPS[Math.floor(rng() * QUICK_SOUPS.length)]; g++; }
+  prepPlan.week[idx] = { day: cur.day, main: pickDiff(mains, cur.main), side: pickDiff(sides, cur.side), soup };
+  renderPrep();
 }
 
 function setMode(m) {

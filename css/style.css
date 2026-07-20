@@ -234,6 +234,13 @@ main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 60px; }
 .ameal .menu-link { color: var(--ink); text-decoration: none; font-weight: 700; }
 .ameal .menu-link:hover { color: var(--accent); text-decoration: underline; }
 .ameal .plus { color: var(--sub); margin: 0 5px; font-size: .82rem; }
+.prep-reroll {
+  margin-left: auto; flex: 0 0 auto; border: 1px dashed var(--line); background: #fff;
+  color: var(--sub); border-radius: 8px; padding: 5px 9px; font-size: .78rem;
+  cursor: pointer; font-family: inherit; transition: border-color .15s, color .15s;
+}
+.prep-reroll:hover { border-color: var(--accent); color: var(--accent); }
+.prep-reroll:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 2px; }
 .prep-note { font-size: .8rem; color: var(--sub); }
 
 /* モーダル */
