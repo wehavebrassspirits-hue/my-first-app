@@ -55,6 +55,23 @@ function cookpadUrl(name) {
   return "https://cookpad.com/jp/search/" + encodeURIComponent(kw);
 }
 
+function recipeLink(text, query) {
+  return `<a class="menu-link" href="${cookpadUrl(query != null ? query : text)}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+}
+
+// 献立名の見出し。複合献立(parts)は各料理を個別リンクにする。
+function menuTitleHTML(menu) {
+  const chili = menu.spicy ? " 🌶️" : "";
+  const icon = `<span class="cook-ic" aria-hidden="true"> 🔍</span>`;
+  let inner;
+  if (Array.isArray(menu.parts) && menu.parts.length) {
+    inner = menu.parts.map((p) => recipeLink(p)).join(`<span class="join">と</span>`);
+  } else {
+    inner = recipeLink(menu.name, menu.q || menu.name);
+  }
+  return `<div class="menu-name">${inner}${chili}${icon}</div>`;
+}
+
 // ── 各曜日の手間レベルの初期値を設問から決める ──
 function defaultEffortForIndex(i) {
   let base = WEEKEND_IDX.includes(i) ? settings.weekendEffort : settings.weekdayEffort;
@@ -182,7 +199,7 @@ function cardHTML(p, i) {
         <span class="hi">${w.max}°</span><span class="lo">${w.min}°</span>
         ${w.pop != null ? `<span class="pop">☔${w.pop}%</span>` : ""}
       </div>
-      <a class="menu-name menu-link" href="${cookpadUrl(p.menu.q || p.menu.name)}" target="_blank" rel="noopener noreferrer">${p.menu.name}${p.menu.spicy ? " 🌶️" : ""}<span class="cook-ic" aria-hidden="true"> 🔍</span></a>
+      ${menuTitleHTML(p.menu)}
       <ul class="items">${p.menu.items.map((it) => `<li><a href="${cookpadUrl(it)}" target="_blank" rel="noopener noreferrer">${it}</a></li>`).join("")}</ul>
       <div class="reason">${p.reason}</div>
       <div class="effort">
