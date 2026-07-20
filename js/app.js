@@ -36,6 +36,8 @@ let weekWeather = [];   // 天気配列
 let regenSeed = 0;      // 「別の献立にする」で変化
 let currentPlan = [];   // 現在の献立（買い物リスト用）
 let dayEfforts = [];    // 各曜日の手間レベル（スライダー値）
+let mode = "week";      // "week"(週間プラン) / "prep"(作り置き)
+let prepPlan = null;    // 作り置きの生成結果
 
 // ── 設定の永続化 ─────────────────────────────
 function loadSettings() {
@@ -299,20 +301,119 @@ function renderSettingsSummary() {
 // ── 買い物リスト ───────────────────────────────
 function showShoppingList() {
   const counts = {};
-  currentPlan.forEach((p) => {
-    p.menu.ingredients.forEach((ing) => {
-      counts[ing] = (counts[ing] || 0) + 1;
-    });
-  });
+  if (mode === "prep") {
+    if (!prepPlan) buildPrepPlan();
+    prepPlan.set.forEach((m) => m.ingredients.forEach((ing) => { counts[ing] = (counts[ing] || 0) + 1; }));
+    counts["米"] = (counts["米"] || 0) + 1;
+  } else {
+    currentPlan.forEach((p) => p.menu.ingredients.forEach((ing) => { counts[ing] = (counts[ing] || 0) + 1; }));
+  }
   const items = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   const box = document.getElementById("shopping");
+  const title = mode === "prep" ? "🛒 作り置きの買い物リスト" : "🛒 今週の買い物リスト";
   box.innerHTML = `
-    <h3>🛒 今週の買い物リスト（${servingText()}目安）</h3>
-    <ul>${items.map(([ing, n]) => `<li>${ing}${n > 1 ? ` <em>×${n}日</em>` : ""}</li>`).join("")}</ul>
+    <h3>${title}（${servingText()}目安）</h3>
+    <ul>${items.map(([ing, n]) => `<li>${ing}${n > 1 ? ` <em>×${n}品</em>` : ""}</li>`).join("")}</ul>
     <p class="hint">※分量は${servingText()}を目安に調整してください（スタミナ多めONのときは気持ち多めに）。</p>
   `;
   box.classList.remove("hidden");
   box.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// ── 作り置きモード ─────────────────────────────
+const PREP_WEEKDAYS = ["月", "火", "水", "木", "金"];
+
+function keepText(m) {
+  const parts = [`冷蔵${m.fridge}日`];
+  if (m.freezer) parts.push("冷凍OK");
+  if (m.bento) parts.push("弁当OK");
+  return parts;
+}
+
+// rng で重み付き抽選（スタミナ重視なら主菜を強める）し n 品選ぶ
+function pickPrep(list, n, rng) {
+  const pool = [];
+  for (const m of list) {
+    let w = 1;
+    if (settings.staminaBoost && m.type === "main") w += (m.stamina - 1) * 1.2;
+    for (let k = 0; k < Math.max(1, Math.round(w)); k++) pool.push(m);
+  }
+  const chosen = [];
+  const used = new Set();
+  let guard = 0;
+  while (chosen.length < n && guard < 500) {
+    guard++;
+    const cand = pool[Math.floor(rng() * pool.length)];
+    if (cand && !used.has(cand.id)) { used.add(cand.id); chosen.push(cand); }
+    if (used.size >= list.length) break;
+  }
+  return chosen;
+}
+
+function buildPrepPlan() {
+  const rng = seededRandom(`prep-${regenSeed}-${settings.staminaBoost}-${settings.allergies.join()}-${settings.dislikes.join()}`);
+  const mains = PREP_MENUS.filter((m) => m.type === "main" && passesFamily(m));
+  const sides = PREP_MENUS.filter((m) => m.type === "side" && passesFamily(m));
+  const pickedMains = pickPrep(mains, Math.min(3, mains.length), rng);
+  const pickedSides = pickPrep(sides, Math.min(2, sides.length), rng);
+  const set = [...pickedMains, ...pickedSides];
+
+  // 平日（月〜金）の組み立て：作り置き主菜＋副菜＋汁物＋ごはん
+  const week = PREP_WEEKDAYS.map((day, i) => ({
+    day,
+    main: pickedMains.length ? pickedMains[i % pickedMains.length] : null,
+    side: pickedSides.length ? pickedSides[i % pickedSides.length] : null,
+    soup: QUICK_SOUPS[(regenSeed + i) % QUICK_SOUPS.length],
+  }));
+
+  prepPlan = { set, week };
+  return prepPlan;
+}
+
+function renderPrep() {
+  if (!prepPlan) buildPrepPlan();
+  const el = document.getElementById("prep");
+  const { set, week } = prepPlan;
+
+  const setCards = set.map((m) => `
+    <div class="prep-card ${m.type}">
+      <div class="prep-type">${m.type === "main" ? "主菜" : "副菜"}</div>
+      ${menuTitleHTML(m)}
+      <div class="keep">${keepText(m).map((t) => `<span class="keep-badge">${t}</span>`).join("")}</div>
+      <div class="prep-ing">${m.ingredients.join("・")}</div>
+    </div>`).join("");
+
+  const weekRows = week.map((d) => `
+    <div class="assemble-row">
+      <span class="aday">${d.day}</span>
+      <span class="ameal">
+        ${d.main ? `<a class="menu-link" href="${cookpadUrl(d.main.q || d.main.name)}" target="_blank" rel="noopener noreferrer">${d.main.name}</a>` : "—"}
+        <span class="plus">＋</span>${d.side ? d.side.name : ""}
+        <span class="plus">＋</span>${d.soup}<span class="plus">＋</span>ごはん
+      </span>
+    </div>`).join("");
+
+  el.innerHTML = `
+    <div class="prep-intro">
+      🥡 <strong>週末にまとめて作り置き → 平日は組み立てるだけ。</strong>
+      下の${set.length}品を休日に仕込めば、平日の晩ごはんがぐっとラクになります（${servingText()}目安）。
+    </div>
+    <h3 class="prep-h">今週の作り置き（休日に仕込む）</h3>
+    <div class="prep-grid">${setCards}</div>
+    <h3 class="prep-h">平日の組み立て例</h3>
+    <div class="assemble">${weekRows}</div>
+    <p class="prep-note">※日持ちは目安です。清潔な容器・箸で取り分け、早めに食べ切ってください。土日は仕込み＆好きなものを。</p>
+  `;
+}
+
+function setMode(m) {
+  mode = m;
+  document.getElementById("tab-week").classList.toggle("active", m === "week");
+  document.getElementById("tab-prep").classList.toggle("active", m === "prep");
+  document.getElementById("view-week").classList.toggle("hidden", m !== "week");
+  document.getElementById("view-prep").classList.toggle("hidden", m !== "prep");
+  document.getElementById("shopping").classList.add("hidden");
+  if (m === "prep") { buildPrepPlan(); renderPrep(); }
 }
 
 // ── 今週の人気レシピ（trending.json / 自動更新）──
@@ -409,8 +510,15 @@ function init() {
   document.getElementById("btn-settings").addEventListener("click", openSettings);
   document.getElementById("btn-close").addEventListener("click", closeSettings);
   document.getElementById("btn-apply").addEventListener("click", applySettings);
-  document.getElementById("btn-regen").addEventListener("click", () => { regenSeed++; render(); });
+  document.getElementById("btn-regen").addEventListener("click", () => {
+    regenSeed++;
+    if (mode === "prep") { buildPrepPlan(); renderPrep(); }
+    else render();
+    document.getElementById("shopping").classList.add("hidden");
+  });
   document.getElementById("btn-shopping").addEventListener("click", showShoppingList);
+  document.getElementById("tab-week").addEventListener("click", () => setMode("week"));
+  document.getElementById("tab-prep").addEventListener("click", () => setMode("prep"));
   document.getElementById("modal").addEventListener("click", (e) => {
     if (e.target.id === "modal") closeSettings();
   });

@@ -29,6 +29,16 @@ header h1 { margin: 0; font-size: 1.6rem; }
 
 main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 60px; }
 
+.tabs { display: flex; gap: 8px; margin: 18px 0 14px; }
+.tab {
+  border: 1px solid var(--line); background: var(--card); color: var(--sub);
+  padding: 9px 16px; border-radius: 999px; font-size: .92rem; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: background .15s, color .15s, border-color .15s;
+}
+.tab:hover { border-color: var(--accent); color: var(--accent); }
+.tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tab:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 2px; }
+
 .toolbar {
   display: flex; flex-wrap: wrap; gap: 12px;
   align-items: center; justify-content: space-between;
@@ -186,6 +196,45 @@ main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 60px; }
 .credit { text-align: center; color: #b3ab9d; font-size: .78rem; margin-top: 28px; }
 
 .hidden { display: none !important; }
+
+/* 作り置きモード */
+.prep-intro {
+  background: #eaf3e2; color: #46652c; border: 1px solid #d3e5c2;
+  border-radius: 12px; padding: 12px 14px; font-size: .92rem; margin-bottom: 16px;
+}
+.prep-intro strong { color: #3c5a24; }
+.prep-h { margin: 6px 0 12px; font-size: 1.1rem; }
+.prep-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-bottom: 22px;
+}
+.prep-card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px; box-shadow: var(--shadow); border-left: 4px solid var(--accent);
+}
+.prep-card.side { border-left-color: var(--leaf, #6b8e4e); }
+.prep-type { font-size: .74rem; font-weight: 700; color: var(--sub); margin-bottom: 2px; }
+.keep { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 8px; }
+.keep-badge {
+  background: #f3ede1; color: #8a7a52; font-size: .72rem; font-weight: 700;
+  border-radius: 6px; padding: 1px 8px;
+}
+.prep-ing { font-size: .82rem; color: var(--sub); line-height: 1.5; }
+
+.assemble {
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  overflow: hidden; box-shadow: var(--shadow); margin-bottom: 14px;
+}
+.assemble-row { display: flex; gap: 12px; align-items: baseline; padding: 11px 14px; border-top: 1px solid var(--line); }
+.assemble-row:first-child { border-top: none; }
+.aday {
+  background: var(--accent-soft); color: var(--accent); font-weight: 800;
+  border-radius: 8px; padding: 2px 12px; font-size: .95rem; flex: 0 0 auto;
+}
+.ameal { font-size: .92rem; }
+.ameal .menu-link { color: var(--ink); text-decoration: none; font-weight: 700; }
+.ameal .menu-link:hover { color: var(--accent); text-decoration: underline; }
+.ameal .plus { color: var(--sub); margin: 0 5px; font-size: .82rem; }
+.prep-note { font-size: .8rem; color: var(--sub); }
 
 /* モーダル */
 .modal {

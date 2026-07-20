@@ -15,6 +15,11 @@
   </header>
 
   <main>
+    <div class="tabs" role="tablist">
+      <button id="tab-week" class="tab active" role="tab">🗓️ 週間プラン</button>
+      <button id="tab-prep" class="tab" role="tab">🥡 作り置き</button>
+    </div>
+
     <div class="toolbar">
       <div id="summary" class="summary"></div>
       <div class="actions">
@@ -25,9 +30,19 @@
     </div>
 
     <div id="status" class="status"></div>
-    <p class="recipe-hint">💡 献立名や料理をタップすると、クックパッドのレシピ検索が開きます。</p>
-    <section id="plan" class="grid"></section>
-    <section id="trending" class="trending hidden"></section>
+
+    <!-- 週間プラン -->
+    <div id="view-week">
+      <p class="recipe-hint">💡 献立名や料理をタップすると、クックパッドのレシピ検索が開きます。</p>
+      <section id="plan" class="grid"></section>
+      <section id="trending" class="trending hidden"></section>
+    </div>
+
+    <!-- 作り置き -->
+    <div id="view-prep" class="hidden">
+      <section id="prep"></section>
+    </div>
+
     <section id="shopping" class="shopping hidden"></section>
 
     <p class="credit">天気データ: Open-Meteo（無料・キー不要）／ レシピ検索: クックパッド</p>
@@ -101,6 +116,7 @@
   </div>
 
   <script src="js/meals.js"></script>
+  <script src="js/prep.js"></script>
   <script src="js/weather.js"></script>
   <script src="js/app.js"></script>
 </body>
