@@ -133,6 +133,14 @@ main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 60px; }
   background: #eaf3e2; color: #5a7d3a; font-size: .72rem; font-weight: 700;
   border-radius: 6px; padding: 1px 7px; margin-left: 4px;
 }
+.trend-badge {
+  background: #fde3d6; color: #d9481f; font-size: .72rem; font-weight: 700;
+  border-radius: 6px; padding: 1px 7px; margin-left: 4px;
+}
+.season-badge {
+  background: #e6f0da; color: #5a8a2f; font-size: .72rem; font-weight: 700;
+  border-radius: 6px; padding: 1px 7px; margin-left: 4px;
+}
 
 .reroll {
   border: 1px dashed var(--line); background: #fff;

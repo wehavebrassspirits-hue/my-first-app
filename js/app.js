@@ -21,6 +21,16 @@ const PREP_DAYS_IDX = [0, 3];        // 作り置き活用日にする曜日（�
 const EFFORT_LABELS = { 1: "楽ちん", 2: "ふつう", 3: "しっかり" };
 const STORAGE_KEY = "mealplanner.settings.v1";
 
+// 今の季節（旬メニューを出やすくするために使う）
+function currentSeason() {
+  const m = new Date().getMonth() + 1; // 1〜12
+  if (m >= 3 && m <= 5) return "spring";
+  if (m >= 6 && m <= 8) return "summer";
+  if (m >= 9 && m <= 11) return "autumn";
+  return "winter";
+}
+const SEASON = currentSeason();
+
 let settings = loadSettings();
 let weekWeather = [];   // 天気配列
 let regenSeed = 0;      // 「別の献立にする」で変化
@@ -145,6 +155,8 @@ function pickMenu(weather, band, usedIds, rng, maxEffort) {
     let w = 1;
     if (settings.staminaBoost) w += (m.stamina - 1) * 1.5;
     if (weather.isRain && m.rainOk) w += 1;
+    if (m.trend) w += 1.2;                                   // 流行りを出やすく
+    if (m.season && m.season.includes(SEASON)) w += 0.8;    // 旬を出やすく
     for (let k = 0; k < Math.max(1, Math.round(w)); k++) weighted.push(m);
   }
   return weighted[Math.floor(rng() * weighted.length)] || fresh[0];
@@ -187,12 +199,14 @@ function cardHTML(p, i) {
   const dateObj = new Date(w.date + "T00:00:00");
   const eff = dayEfforts[i] || 3;
   const prepBadge = isPrepDay(i) ? `<span class="prep-badge">作り置き</span>` : "";
+  const trendBadge = p.menu.trend ? `<span class="trend-badge">🔥人気</span>` : "";
+  const seasonBadge = (p.menu.season && p.menu.season.includes(SEASON)) ? `<span class="season-badge">🍃旬</span>` : "";
   return `
     <div class="card">
       <div class="card-head">
         <span class="dow">${WEEK_LABELS[i] || ""}</span>
         <span class="date">${dateObj.getMonth() + 1}/${dateObj.getDate()}</span>
-        ${prepBadge}
+        ${trendBadge}${seasonBadge}${prepBadge}
         <span class="weather" title="${w.label}">${w.icon}</span>
       </div>
       <div class="temps">

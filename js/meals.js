@@ -11,6 +11,9 @@
 // parts: (任意) 「◯◯と◯◯」型の複合献立で、各料理を個別リンクにするための
 //    配列。要素を「と」で連結すると name と一致するように並べる。
 //    各要素がそのままクックパッド検索キーワード＆表示になる。
+// trend: (任意) 流行り・SNS人気の献立。true だと「🔥人気」バッジ＆出やすくなる。
+// season: (任意) 旬の季節 ['spring'|'summer'|'autumn'|'winter'] の配列。
+//    今の季節に合う献立が出やすくなる。
 
 const MENUS = [
   // ── 和食・定食（焼き魚・煮魚・煮物） ─────────────────────
@@ -196,6 +199,40 @@ const MENUS = [
   { id: 158, name: "炊き込みごはんと唐揚げ", parts: ["炊き込みごはん", "唐揚げ"], items: ["きのこ炊き込みごはん", "鶏の唐揚げ", "味噌汁"], temp: ["mild","cold"], rainOk: false, effort: 2, stamina: 3, spicy: false, allergens: ["小麦"], ingredients: ["米","しめじ","にんじん","鶏もも肉","片栗粉","油揚げ"] },
   { id: 159, name: "ビビンバ丼(そぼろ)", items: ["ビビンバ丼", "わかめスープ", "キムチ"], temp: ["hot","mild"], rainOk: true, effort: 1, stamina: 3, spicy: true, allergens: ["卵","大豆"], ingredients: ["牛ひき肉","もやし","ほうれん草","にんじん","卵","コチュジャン","米"] },
   { id: 160, name: "オムハヤシ", items: ["オムハヤシ", "コンソメスープ", "サラダ"], temp: ["cold","mild"], rainOk: true, effort: 2, stamina: 2, spicy: false, allergens: ["卵","小麦"], ingredients: ["卵","牛薄切り肉","玉ねぎ","ハヤシルウ","米"] },
+
+  // ── 🔥 流行り・SNS人気（trend） ─────────────────────────
+  { id: 161, name: "ヤンニョムチキン", items: ["ヤンニョムチキン", "チーズディップ", "わかめスープ・ごはん"], temp: ["mild","hot"], rainOk: true, effort: 2, stamina: 3, spicy: true, trend: true, allergens: ["小麦"], ingredients: ["鶏もも肉","コチュジャン","はちみつ","にんにく","片栗粉","米"] },
+  { id: 162, name: "台湾まぜそば", items: ["台湾まぜそば", "追い飯", "わかめスープ"], temp: ["mild","hot"], rainOk: true, effort: 2, stamina: 3, spicy: true, trend: true, allergens: ["小麦","卵"], ingredients: ["中華麺","豚ひき肉","にら","にんにく","卵黄","魚粉","ねぎ"] },
+  { id: 163, name: "カオマンガイ", items: ["カオマンガイ", "パクチーサラダ", "春雨スープ"], temp: ["hot","mild"], rainOk: true, effort: 2, stamina: 2, spicy: false, trend: true, allergens: [], ingredients: ["鶏もも肉","米","しょうが","長ねぎ","ナンプラー","パクチー"] },
+  { id: 164, name: "ルーローハン", items: ["魯肉飯(ルーローハン)", "ゆで卵", "青梗菜の炒め"], temp: ["mild","hot"], rainOk: true, effort: 2, stamina: 3, spicy: false, trend: true, allergens: ["大豆"], ingredients: ["豚バラ肉","卵","八角","しょうゆ","青梗菜","米"] },
+  { id: 165, name: "グリーンカレー", items: ["グリーンカレー", "ジャスミンライス", "生春巻き"], temp: ["hot","mild"], rainOk: true, effort: 2, stamina: 2, spicy: true, trend: true, allergens: ["乳"], ingredients: ["鶏もも肉","なす","パプリカ","ココナッツミルク","グリーンカレーペースト","米"] },
+  { id: 166, name: "パッタイ", items: ["パッタイ", "春雨スープ", "きゅうりサラダ"], temp: ["hot","mild"], rainOk: true, effort: 2, stamina: 2, spicy: false, trend: true, allergens: ["小麦","えび","卵"], ingredients: ["ライスヌードル","えび","もやし","卵","ピーナッツ","ナンプラー"] },
+  { id: 167, name: "フォー", items: ["鶏フォー", "生春巻き", "パクチーサラダ"], temp: ["cold","mild"], rainOk: true, effort: 1, stamina: 1, spicy: false, trend: true, allergens: [], ingredients: ["フォー","鶏むね肉","もやし","パクチー","ライム","ナンプラー"] },
+  { id: 168, name: "キンパ", items: ["キンパ", "わかめスープ", "ナムル"], temp: ["mild","hot"], rainOk: true, effort: 2, stamina: 2, spicy: false, trend: true, allergens: ["卵"], ingredients: ["米","牛ひき肉","ほうれん草","にんじん","たくあん","焼きのり"] },
+  { id: 169, name: "ビリヤニ", items: ["チキンビリヤニ", "ライタ", "アチャール"], temp: ["mild","hot"], rainOk: true, effort: 3, stamina: 3, spicy: true, trend: true, allergens: ["乳"], ingredients: ["鶏もも肉","バスマティ米","ヨーグルト","ミックススパイス","玉ねぎ"] },
+  { id: 170, name: "やみつき塩だれ豚キャベツ", items: ["塩だれ豚とキャベツ炒め", "わかめスープ", "ごはん"], temp: ["mild","hot"], rainOk: true, effort: 1, stamina: 2, spicy: false, trend: true, allergens: [], ingredients: ["豚バラ肉","キャベツ","にんにく","ごま油","鶏がらだし","米"] },
+  { id: 171, name: "鶏むねステーキ ガーリックソース", items: ["鶏むねのガーリックステーキ", "ブロッコリー", "バターライス"], temp: ["mild","hot"], rainOk: true, effort: 1, stamina: 3, spicy: false, trend: true, allergens: [], ingredients: ["鶏むね肉","ブロッコリー","にんにく","オリーブオイル","しょうゆ","米"] },
+  { id: 172, name: "オートミールリゾット", items: ["きのことベーコンのオートミールリゾット", "コンソメスープ", "サラダ"], temp: ["cold","mild"], rainOk: true, effort: 1, stamina: 1, spicy: false, trend: true, allergens: ["乳"], ingredients: ["オートミール","ベーコン","玉ねぎ","牛乳","チーズ","しめじ"] },
+  { id: 173, name: "サラダチキンボウル", items: ["サラダチキンとアボカドのボウル", "コーンスープ", "ゆで卵"], temp: ["hot","mild"], rainOk: true, effort: 1, stamina: 2, spicy: false, trend: true, allergens: ["卵"], ingredients: ["サラダチキン","アボカド","ミックスビーンズ","レタス","トマト","米"] },
+  { id: 174, name: "海老アヒージョ", items: ["海老ときのこのアヒージョ", "バゲット", "サラダ"], temp: ["mild","cold"], rainOk: true, effort: 2, stamina: 1, spicy: false, trend: true, allergens: ["小麦","えび"], ingredients: ["えび","マッシュルーム","にんにく","オリーブオイル","バゲット","ブロッコリー"] },
+  { id: 175, name: "おうちタコス", items: ["ソフトタコス", "ワカモレ", "コーンスープ"], temp: ["hot","mild"], rainOk: true, effort: 2, stamina: 2, spicy: false, trend: true, allergens: ["小麦","乳"], ingredients: ["合いびき肉","トルティーヤ","レタス","トマト","チーズ","アボカド"] },
+  { id: 176, name: "うま辛よだれ豚しゃぶ", items: ["よだれ豚しゃぶ", "冷奴", "ごはん・わかめスープ"], temp: ["hot","mild"], rainOk: true, effort: 1, stamina: 2, spicy: true, trend: true, allergens: ["大豆"], ingredients: ["豚しゃぶ肉","きゅうり","ラー油","ごまだれ","豆腐","米"] },
+  { id: 177, name: "悪魔のスタミナ丼", items: ["にんにく醤油スタミナ丼", "卵黄のせ", "わかめスープ"], temp: ["hot","mild"], rainOk: true, effort: 1, stamina: 3, spicy: true, trend: true, allergens: ["卵","大豆"], ingredients: ["豚バラ肉","にんにく","卵黄","コチュジャン","長ねぎ","米"] },
+  { id: 178, name: "無限キャベツと鶏の唐揚げ", parts: ["無限キャベツ", "鶏の唐揚げ"], items: ["鶏の唐揚げ", "無限キャベツ", "ごはん・味噌汁"], temp: ["mild","hot"], rainOk: false, effort: 2, stamina: 3, spicy: false, trend: true, allergens: ["小麦"], ingredients: ["鶏もも肉","キャベツ","片栗粉","ごま油","鶏がらだし","米"] },
+
+  // ── 🍃 旬・季節メニュー（season） ───────────────────────
+  { id: 179, name: "春キャベツと桜えびのパスタ", items: ["春キャベツと桜えびのペペロンチーノ", "コンソメスープ", "サラダ"], temp: ["mild"], rainOk: true, effort: 1, stamina: 1, spicy: false, season: ["spring"], allergens: ["小麦","えび"], ingredients: ["スパゲッティ","春キャベツ","桜えび","にんにく","オリーブオイル"] },
+  { id: 180, name: "たけのこご飯と天ぷら", parts: ["たけのこご飯", "天ぷら"], items: ["たけのこご飯", "野菜と海老の天ぷら", "味噌汁"], temp: ["mild"], rainOk: false, effort: 2, stamina: 1, spicy: false, season: ["spring"], allergens: ["小麦","えび"], ingredients: ["たけのこ","米","油揚げ","えび","大葉","天ぷら粉"] },
+  { id: 181, name: "春野菜のクリームシチュー", items: ["春野菜のクリームシチュー", "バゲット", "サラダ"], temp: ["cold","mild"], rainOk: true, effort: 2, stamina: 2, spicy: false, season: ["spring"], allergens: ["小麦","乳"], ingredients: ["鶏もも肉","新じゃが","アスパラ","春キャベツ","牛乳","シチュールウ"] },
+  { id: 182, name: "冷製トマトのカッペリーニ", items: ["冷製トマトカッペリーニ", "コーンスープ", "生ハムサラダ"], temp: ["hot"], rainOk: true, effort: 1, stamina: 1, spicy: false, season: ["summer"], allergens: ["小麦"], ingredients: ["カッペリーニ","トマト","バジル","生ハム","オリーブオイル"] },
+  { id: 183, name: "夏野菜チャンプルー", items: ["夏野菜チャンプルー", "もずく酢", "ごはん・味噌汁"], temp: ["hot"], rainOk: true, effort: 2, stamina: 2, spicy: false, season: ["summer"], allergens: ["卵","大豆"], ingredients: ["ゴーヤ","豚バラ肉","豆腐","卵","かつお節","米"] },
+  { id: 184, name: "秋鮭ときのこの炊き込みご飯", items: ["秋鮭ときのこの炊き込みご飯", "けんちん汁", "だし巻き卵"], temp: ["mild","cold"], rainOk: true, effort: 2, stamina: 2, spicy: false, season: ["autumn"], allergens: ["卵"], ingredients: ["生鮭","しめじ","まいたけ","米","油揚げ","三つ葉"] },
+  { id: 185, name: "さつまいもと豚の甘辛炒め", items: ["さつまいもと豚肉の甘辛炒め", "わかめスープ", "ごはん"], temp: ["mild","cold"], rainOk: true, effort: 1, stamina: 2, spicy: false, season: ["autumn"], allergens: [], ingredients: ["さつまいも","豚こま肉","ピーマン","しょうゆ","ごま","米"] },
+  { id: 186, name: "かぼちゃのそぼろあんかけ定食", items: ["かぼちゃのそぼろあんかけ", "焼き魚", "ごはん・味噌汁"], temp: ["mild","cold"], rainOk: true, effort: 2, stamina: 1, spicy: false, season: ["autumn"], allergens: [], ingredients: ["かぼちゃ","鶏ひき肉","だし","さば","米","味噌"] },
+  { id: 187, name: "牡蠣の土手鍋", items: ["牡蠣の土手鍋", "〆の雑炊", "ほうれん草のおひたし"], temp: ["cold"], rainOk: true, effort: 2, stamina: 2, spicy: false, season: ["winter"], allergens: ["大豆"], ingredients: ["牡蠣","白菜","春菊","焼き豆腐","味噌","米"] },
+  { id: 188, name: "かぼちゃほうとう", items: ["かぼちゃほうとう", "浅漬け", "おにぎり"], temp: ["cold"], rainOk: true, effort: 2, stamina: 2, spicy: false, season: ["winter"], allergens: ["小麦"], ingredients: ["ほうとう","かぼちゃ","白菜","にんじん","油揚げ","味噌"] },
+  { id: 189, name: "白菜と豚バラのミルフィーユ鍋", items: ["白菜と豚バラのミルフィーユ鍋", "ポン酢・薬味", "〆のうどん"], temp: ["cold"], rainOk: true, effort: 1, stamina: 3, spicy: false, trend: true, season: ["winter"], allergens: ["小麦"], ingredients: ["豚バラ肉","白菜","ポン酢","昆布だし","春菊","うどん"] },
+  { id: 190, name: "牡蠣グラタン", items: ["牡蠣のグラタン", "コーンスープ", "サラダ"], temp: ["cold"], rainOk: true, effort: 3, stamina: 2, spicy: false, season: ["winter"], allergens: ["小麦","乳"], ingredients: ["牡蠣","マカロニ","ホワイトソース","ほうれん草","チーズ","玉ねぎ"] },
 ];
 
 // UMD 風エクスポート（モジュール未使用でも window から参照可能）
