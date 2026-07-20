@@ -126,6 +126,11 @@ main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 60px; }
   width: 100%; max-width: 420px; box-shadow: 0 10px 40px rgba(0,0,0,.2);
 }
 .modal-box h2 { margin-top: 0; }
+.welcome {
+  background: var(--accent-soft); color: #a8431c;
+  border-radius: 10px; padding: 10px 12px; font-size: .85rem; margin: 0 0 14px;
+}
+.welcome strong { color: var(--accent); }
 .modal-box label {
   display: block; font-size: .88rem; color: var(--sub);
   margin-bottom: 12px; font-weight: 600;

@@ -1,10 +1,12 @@
 // メインアプリ：天気に合わせて次の週の献立を提案
 
+// 初期値は一般的な内容のみ（個人情報はコードに持たせない）。
+// 実際の家族構成は各ユーザーが設定画面で入力し、その端末のブラウザ内
+// (localStorage) にのみ保存される。サーバーには一切送信しない。
 const DEFAULT_SETTINGS = {
-  city: "宇都宮",
+  city: "東京",
   adults: 2,
-  kids: 3,
-  kidsNote: "小6サッカー男子・小2女子・年少の超活発男子",
+  kids: 2,
   staminaBoost: true,   // 育ち盛り・運動する子向けにスタミナ多め
   allergies: [],        // 例: ["えび", "そば"]
   dislikes: [],         // 例: ["なす"]
@@ -235,7 +237,7 @@ function showShoppingList() {
   box.innerHTML = `
     <h3>🛒 今週の買い物リスト（${servingText()}目安）</h3>
     <ul>${items.map(([ing, n]) => `<li>${ing}${n > 1 ? ` <em>×${n}日</em>` : ""}</li>`).join("")}</ul>
-    <p class="hint">※分量は${servingText()}を目安に調整してください（育ち盛り3人分でやや多めに）。</p>
+    <p class="hint">※分量は${servingText()}を目安に調整してください（スタミナ多めONのときは気持ち多めに）。</p>
   `;
   box.classList.remove("hidden");
   box.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -250,7 +252,7 @@ async function loadAndRender() {
   document.getElementById("shopping").classList.add("hidden");
 
   try {
-    const c = CITIES[settings.city] || CITIES["宇都宮"];
+    const c = CITIES[settings.city] || CITIES["東京"];
     weekWeather = await fetchNextWeek(c.lat, c.lon);
     if (!weekWeather.length) throw new Error("予報データが空でした");
     status.textContent = "";
@@ -308,6 +310,14 @@ function init() {
   });
 
   loadAndRender();
+
+  // 初回起動時は設定画面を開いて家族構成の入力をうながす
+  const isFirstRun = localStorage.getItem(STORAGE_KEY) === null;
+  if (isFirstRun) {
+    const welcome = document.getElementById("welcome");
+    if (welcome) welcome.classList.remove("hidden");
+    openSettings();
+  }
 }
 
 document.addEventListener("DOMContentLoaded", init);
