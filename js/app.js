@@ -44,6 +44,17 @@ function servingText() {
   return `${settings.adults + settings.kids}人分`;
 }
 
+// ── クックパッド検索リンク ─────────────────────
+// 「(甘口)」などのカッコ書きや「定食」を除いて検索精度を上げる
+function cookpadUrl(name) {
+  const kw = String(name)
+    .replace(/[（(].*?[)）]/g, "")
+    .replace(/定食$/, "")
+    .replace(/\s*🌶️\s*/g, "")
+    .trim();
+  return "https://cookpad.com/jp/search/" + encodeURIComponent(kw);
+}
+
 // ── 各曜日の手間レベルの初期値を設問から決める ──
 function defaultEffortForIndex(i) {
   let base = WEEKEND_IDX.includes(i) ? settings.weekendEffort : settings.weekdayEffort;
@@ -157,7 +168,6 @@ function buildPlan() {
 function cardHTML(p, i) {
   const w = p.weather;
   const dateObj = new Date(w.date + "T00:00:00");
-  const spicyClass = p.menu.spicy ? " spicy" : "";
   const eff = dayEfforts[i] || 3;
   const prepBadge = isPrepDay(i) ? `<span class="prep-badge">作り置き</span>` : "";
   return `
@@ -172,8 +182,8 @@ function cardHTML(p, i) {
         <span class="hi">${w.max}°</span><span class="lo">${w.min}°</span>
         ${w.pop != null ? `<span class="pop">☔${w.pop}%</span>` : ""}
       </div>
-      <div class="menu-name${spicyClass}">${p.menu.name}</div>
-      <ul class="items">${p.menu.items.map((it) => `<li>${it}</li>`).join("")}</ul>
+      <a class="menu-name menu-link" href="${cookpadUrl(p.menu.name)}" target="_blank" rel="noopener noreferrer">${p.menu.name}${p.menu.spicy ? " 🌶️" : ""}<span class="cook-ic" aria-hidden="true"> 🔍</span></a>
+      <ul class="items">${p.menu.items.map((it) => `<li><a href="${cookpadUrl(it)}" target="_blank" rel="noopener noreferrer">${it}</a></li>`).join("")}</ul>
       <div class="reason">${p.reason}</div>
       <div class="effort">
         <div class="effort-top">
