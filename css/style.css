@@ -149,6 +149,28 @@ main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 60px; }
 }
 .reroll:hover { border-color: var(--accent); color: var(--accent); }
 
+/* 今週の人気レシピ */
+.trending {
+  margin-top: 24px; background: var(--card); border: 1px solid var(--line);
+  border-radius: 14px; padding: 18px; box-shadow: var(--shadow);
+}
+.trending h3 { margin: 0 0 12px; }
+.trending .upd { font-size: .78rem; color: var(--sub); font-weight: 400; }
+.trend-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px;
+}
+.trend-card {
+  display: flex; flex-direction: column; text-decoration: none; color: var(--ink);
+  border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff;
+  transition: transform .05s, box-shadow .15s;
+}
+.trend-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+.trend-card:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 2px; }
+.trend-card img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; background: #f2ede3; }
+.trend-card .noimg { width: 100%; aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; font-size: 2rem; background: #faf7f1; }
+.trend-name { font-size: .86rem; font-weight: 700; padding: 8px 10px 2px; line-height: 1.35; }
+.trend-cat { font-size: .72rem; color: var(--accent); padding: 0 10px 10px; }
+
 .shopping {
   margin-top: 24px; background: var(--card); border: 1px solid var(--line);
   border-radius: 14px; padding: 18px; box-shadow: var(--shadow);

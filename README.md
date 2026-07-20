@@ -58,6 +58,23 @@ python3 -m http.server 8000
 # → ブラウザで http://localhost:8000 を開く
 ```
 
+## 🔥 今週の人気レシピ（自動トレンド・任意）
+
+毎日1回、楽天レシピの人気ランキングを自動取得して「今週の人気レシピ」枠に
+表示できます（`trending.json` を自動更新）。使うには無料のAPIキーを1回だけ登録します。
+
+1. [楽天ウェブサービス](https://webservice.rakuten.co.jp/) に登録し、
+   **アプリID（applicationId）** を発行（無料）
+2. GitHubのこのリポジトリで **Settings → Secrets and variables → Actions →
+   New repository secret**
+   - Name: `RAKUTEN_APP_ID`
+   - Secret: 発行したアプリID
+3. **Actions → 「Update trending recipes」→ Run workflow** で手動実行（以後は毎日自動）
+
+キー未登録の間は人気レシピ枠は表示されません（他の機能は通常どおり動きます）。
+仕組み: `scripts/fetch-trending.js` が取得 → `trending.json` に保存 →
+アプリが読み込み。キーはGitHubのSecretに保管され、公開ページには出ません。
+
 ## 天気データについて
 
 [Open-Meteo](https://open-meteo.com/) の無料予報APIを使用しています
@@ -67,11 +84,14 @@ python3 -m http.server 8000
 ## ファイル構成
 
 ```
-index.html      画面
-css/style.css   デザイン
-js/meals.js     献立データベース（気温帯・雨向き・スタミナ度などのタグ付き）
-js/weather.js   天気取得（Open-Meteo）と気温帯の判定
-js/app.js       献立の選定ロジック・描画・設定・買い物リスト
+index.html                画面
+css/style.css             デザイン
+js/meals.js               献立データベース（気温帯・雨向き・トレンド/旬などのタグ付き）
+js/weather.js             天気取得（Open-Meteo）と気温帯の判定
+js/app.js                 献立の選定ロジック・描画・設定・買い物リスト・人気レシピ
+trending.json             今週の人気レシピ（自動更新。初期は空）
+scripts/fetch-trending.js 楽天レシピ人気ランキング取得スクリプト
+.github/workflows/        Pagesは設定画面から、人気レシピは trending.yml で毎日更新
 ```
 
 ## カスタマイズ

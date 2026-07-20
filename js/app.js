@@ -315,6 +315,34 @@ function showShoppingList() {
   box.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+// ── 今週の人気レシピ（trending.json / 自動更新）──
+async function loadTrending() {
+  const box = document.getElementById("trending");
+  if (!box) return;
+  try {
+    const res = await fetch("trending.json", { cache: "no-store" });
+    if (!res.ok) return;                       // 未生成なら何もしない
+    const data = await res.json();
+    const items = (data && data.items) || [];
+    if (!items.length) return;
+
+    box.innerHTML = `
+      <h3>🔥 今週の人気レシピ${data.updated ? ` <span class="upd">（${data.updated}更新・${data.source || ""}）</span>` : ""}</h3>
+      <div class="trend-grid">
+        ${items.map((it) => `
+          <a class="trend-card" href="${it.url}" target="_blank" rel="noopener noreferrer">
+            ${it.image ? `<img src="${it.image}" alt="" loading="lazy">` : `<div class="noimg">🍽️</div>`}
+            <div class="trend-name">${it.title}</div>
+            ${it.category ? `<div class="trend-cat">${it.category}</div>` : ""}
+          </a>`).join("")}
+      </div>
+    `;
+    box.classList.remove("hidden");
+  } catch (e) {
+    // 取得失敗時は静かに非表示のまま
+  }
+}
+
 // ── 天気取得 → 再描画 ─────────────────────────
 async function loadAndRender() {
   const grid = document.getElementById("plan");
@@ -388,6 +416,7 @@ function init() {
   });
 
   loadAndRender();
+  loadTrending();
 
   // 初回起動時は設定画面を開いて家族構成の入力をうながす
   const isFirstRun = localStorage.getItem(STORAGE_KEY) === null;
