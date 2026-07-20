@@ -16,38 +16,61 @@ FX（為替）戦略を **過去データで検証（バックテスト）** す
 - **先読みバイアス排除** — バー `i` のシグナルはバー `i+1` の始値で執行
 - **主要指標** — 総リターン / 最大ドローダウン / 勝率 / プロフィットファクター / シャープレシオ
 
-## クイックスタート
+## クイックスタート（EUR/USD）
 
 ```bash
 cd fx-backtest
 
-# 合成データで SMA クロス戦略を検証（データ不要）
-python run.py --strategy sma --fast 20 --slow 50
+# 合成データで即検証（データ不要・EUR/USD プリセット）
+python run.py --preset eurusd --strategy sma --fast 20 --slow 50
 
-# RSI 逆張り戦略、ロングのみ
-python run.py --strategy rsi --long-only
+# 自分でダウンロードした実データで検証（形式は自動判定）
+python run.py --preset eurusd --strategy rsi --csv data/eurusd_daily.csv
 
-# 自分の CSV で検証（EUR/USD なら pip は 0.0001）
-python run.py --strategy rsi --csv data/sample_eurusd_h1.csv --pip-size 0.0001
+# HistData.com の1分足（ヘッダーなし・セミコロン区切り）
+python run.py --preset eurusd --histdata data/DAT_ASCII_EURUSD_M1_2020.csv
 ```
 
-### CSV フォーマット
+`--preset` は pip サイズとスプレッドを銘柄に合わせて自動設定します（`eurusd` / `usdjpy` / `xauusd`）。
 
-ヘッダー付きの OHLC。`time` は ISO-8601 か Unix エポック秒。
+## 実データの入手（無料）
+
+この環境はネット制限があり自動ダウンロードできないため、以下から手動で取得して `data/` に置いてください。いずれも**形式は自動判定**します。
+
+| ソース | 内容 | 備考 |
+|---|---|---|
+| [Stooq](https://stooq.com/q/d/l/?s=eurusd&i=d) | EUR/USD 日足 CSV | `Date,Open,High,Low,Close,Volume`。ブラウザで開けば保存できる |
+| [HistData.com](https://www.histdata.com/) | 1分足・ティック | 無料で年単位。`--histdata` で読む |
+| [Dukascopy](https://www.dukascopy.com/swiss/english/marketwatch/historical/) | 1分〜ティック | 精度高。CSV も自動判定 |
+| MetaTrader 4/5 | ヒストリーセンターから CSV エクスポート | 使っている口座のデータ |
+| お使いのブローカー | API/ダウンロード | 本番に一番近い |
+
+### 対応 CSV フォーマット
+
+列名は大文字小文字を問わず自動照合し、区切り文字（`,` `;` タブ）も自動判定します。
 
 ```csv
+# 一般的な形式
 time,open,high,low,close,volume
 2020-01-01T00:00:00+00:00,1.10,1.101,1.099,1.1005,1000
+
+# Stooq 形式（そのまま読めます）
+Date,Open,High,Low,Close,Volume
+2020-01-01,1.1000,1.1020,1.0990,1.1010,1000
 ```
+
+対応する時刻フォーマット: ISO-8601 / `YYYYMMDD HHMMSS` / `YYYY-MM-DD HH:MM:SS` / `YYYY.MM.DD HH:MM:SS`（MT）/ `DD.MM.YYYY ...`（Dukascopy）/ Unix エポック。
 
 ## 主なオプション
 
 | オプション | 意味 | 既定値 |
 |---|---|---|
 | `--strategy` | `sma` または `rsi` | `sma` |
-| `--csv` | 入力 CSV（省略時は合成データ） | なし |
-| `--pip-size` | 1 pip の値（JPY 系 `0.01` / その他 `0.0001`） | `0.01` |
-| `--spread-pips` | スプレッド（pips、往復） | `0.8` |
+| `--preset` | 銘柄プリセット `eurusd` / `usdjpy` / `xauusd`（pip・スプレッドを自動設定） | `eurusd` |
+| `--csv` | 入力 CSV（省略時は合成データ・形式自動判定） | なし |
+| `--histdata` | HistData.com 形式の1分足ファイル | なし |
+| `--pip-size` | 1 pip の値（未指定ならプリセット値） | プリセット依存 |
+| `--spread-pips` | スプレッド（pips、往復。未指定ならプリセット値） | プリセット依存 |
 | `--slippage-pips` | スリッページ（pips） | `0.0` |
 | `--risk` | 1 トレードで許容する資金リスク割合 | `0.01` |
 | `--sl-pips` / `--tp-pips` | 損切り / 利確幅（pips） | `30` / `60` |
@@ -63,8 +86,9 @@ fx-backtest/
 │   ├── indicators.py   # SMA / EMA / RSI
 │   ├── strategy.py     # Strategy 基底クラス・SMA クロス・RSI 戦略
 │   ├── engine.py       # バックテストエンジン（コスト・サイズ・SL/TP）
+│   ├── presets.py      # 銘柄プリセット（pip・スプレッド）
 │   └── metrics.py      # パフォーマンス指標
-├── data/               # サンプル CSV
+├── data/               # サンプル CSV（Stooq 形式・HistData 形式）
 └── tests/              # unittest（依存なし）
 ```
 

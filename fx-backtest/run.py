@@ -20,7 +20,9 @@ from fxbt import (
     RsiStrategy,
     SmaCrossStrategy,
     generate_synthetic,
+    get_preset,
     load_csv,
+    load_histdata,
     metrics,
 )
 
@@ -41,7 +43,13 @@ def build_strategy(args):
 def main(argv=None):
     p = argparse.ArgumentParser(description="fxbt - FX strategy backtester")
     p.add_argument("--strategy", choices=["sma", "rsi"], default="sma")
-    p.add_argument("--csv", help="OHLC CSV file; if omitted, synthetic data is generated")
+    p.add_argument(
+        "--preset",
+        default="eurusd",
+        help="instrument preset: eurusd | usdjpy | xauusd (sets pip size & spread)",
+    )
+    p.add_argument("--csv", help="OHLC CSV file (auto-detects common formats)")
+    p.add_argument("--histdata", help="HistData.com headerless 1-min file")
     p.add_argument("--bars", type=int, default=3000, help="synthetic bar count")
     p.add_argument("--seed", type=int, default=42, help="synthetic RNG seed")
 
@@ -55,8 +63,8 @@ def main(argv=None):
 
     # Account / cost params
     p.add_argument("--balance", type=float, default=10_000.0)
-    p.add_argument("--pip-size", type=float, default=0.01)
-    p.add_argument("--spread-pips", type=float, default=0.8)
+    p.add_argument("--pip-size", type=float, default=None, help="override preset pip size")
+    p.add_argument("--spread-pips", type=float, default=None, help="override preset spread")
     p.add_argument("--slippage-pips", type=float, default=0.0)
     p.add_argument("--risk", type=float, default=0.01, help="fraction of equity risked per trade")
     p.add_argument("--sl-pips", type=float, default=30.0)
@@ -64,17 +72,29 @@ def main(argv=None):
 
     args = p.parse_args(argv)
 
-    if args.csv:
+    preset = get_preset(args.preset)
+    pip_size = args.pip_size if args.pip_size is not None else preset.pip_size
+    spread_pips = args.spread_pips if args.spread_pips is not None else preset.typical_spread_pips
+
+    if args.histdata:
+        candles = load_histdata(args.histdata)
+        source = f"{args.histdata} (HistData)"
+    elif args.csv:
         candles = load_csv(args.csv)
         source = args.csv
     else:
-        candles = generate_synthetic(n=args.bars, seed=args.seed)
-        source = f"synthetic ({args.bars} bars, seed={args.seed})"
+        candles = generate_synthetic(
+            n=args.bars,
+            seed=args.seed,
+            start_price=preset.synth_start_price,
+            annual_vol=preset.synth_annual_vol,
+        )
+        source = f"SYNTHETIC ({args.bars} bars, seed={args.seed}) — not real market data"
 
     config = BacktestConfig(
         initial_balance=args.balance,
-        pip_size=args.pip_size,
-        spread_pips=args.spread_pips,
+        pip_size=pip_size,
+        spread_pips=spread_pips,
         slippage_pips=args.slippage_pips,
         risk_per_trade=args.risk,
         stop_loss_pips=args.sl_pips,
@@ -84,6 +104,7 @@ def main(argv=None):
     strategy = build_strategy(args)
     result = Backtester(config).run(candles, strategy)
 
+    print(f"Instrument      : {preset.symbol}  (pip={pip_size}, spread={spread_pips} pips)")
     print(f"Data source     : {source}")
     print(f"Bars            : {len(candles)}")
     print("-" * 40)

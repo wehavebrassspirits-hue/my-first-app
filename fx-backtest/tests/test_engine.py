@@ -2,6 +2,7 @@
 
 import os
 import sys
+import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 
@@ -15,6 +16,9 @@ from fxbt import (  # noqa: E402
     SmaCrossStrategy,
     Strategy,
     generate_synthetic,
+    get_preset,
+    load_csv,
+    load_histdata,
     metrics,
 )
 from fxbt.indicators import rsi, sma  # noqa: E402
@@ -128,6 +132,61 @@ class TestEngine(unittest.TestCase):
         r1 = Backtester(BacktestConfig()).run(c1, SmaCrossStrategy())
         r2 = Backtester(BacktestConfig()).run(c2, SmaCrossStrategy())
         self.assertEqual(r1.final_balance, r2.final_balance)
+
+
+class TestLoaders(unittest.TestCase):
+    def _write(self, text, suffix=".csv"):
+        fd, path = tempfile.mkstemp(suffix=suffix)
+        with os.fdopen(fd, "w") as f:
+            f.write(text)
+        self.addCleanup(os.unlink, path)
+        return path
+
+    def test_stooq_style_comma_header(self):
+        path = self._write(
+            "Date,Open,High,Low,Close,Volume\n"
+            "2020-01-01,1.1000,1.1020,1.0990,1.1010,1000\n"
+            "2020-01-02,1.1010,1.1030,1.1000,1.1025,1200\n"
+        )
+        candles = load_csv(path)
+        self.assertEqual(len(candles), 2)
+        self.assertAlmostEqual(candles[0].close, 1.1010)
+        self.assertEqual(candles[0].time.year, 2020)
+
+    def test_semicolon_delimiter_and_dotted_date(self):
+        path = self._write(
+            "Gmt time;Open;High;Low;Close;Volume\n"
+            "01.01.2020 17:00:00;1.1000;1.1020;1.0990;1.1010;0\n"
+        )
+        candles = load_csv(path)
+        self.assertEqual(len(candles), 1)
+        self.assertEqual(candles[0].time.hour, 17)
+
+    def test_histdata_headerless(self):
+        path = self._write(
+            "20200101 170000;1.12000;1.12010;1.11990;1.12005;0\n"
+            "20200101 170100;1.12005;1.12020;1.12000;1.12015;0\n"
+        )
+        candles = load_histdata(path)
+        self.assertEqual(len(candles), 2)
+        self.assertAlmostEqual(candles[1].close, 1.12015)
+
+    def test_missing_column_raises(self):
+        path = self._write("Date,Open,High,Close\n2020-01-01,1,2,1.5\n")
+        with self.assertRaises(ValueError):
+            load_csv(path)
+
+
+class TestPresets(unittest.TestCase):
+    def test_eurusd_pip(self):
+        self.assertAlmostEqual(get_preset("EUR/USD").pip_size, 0.0001)
+
+    def test_normalization(self):
+        self.assertEqual(get_preset("eur_usd").symbol, get_preset("eurusd").symbol)
+
+    def test_unknown_raises(self):
+        with self.assertRaises(ValueError):
+            get_preset("btcusd")
 
 
 class TestMetrics(unittest.TestCase):
