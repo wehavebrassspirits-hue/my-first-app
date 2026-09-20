@@ -186,6 +186,14 @@ table { border-collapse: collapse; width: 100%; font-size: .85rem; }
 .legend { display: flex; flex-wrap: wrap; gap: 10px 14px; margin-top: 14px; }
 .legend-item { display: inline-flex; align-items: center; gap: 5px; font-size: .8rem; color: var(--sub); }
 
+.grp-toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.grp-btn {
+  border: none; background: var(--card); color: var(--sub); font-family: inherit;
+  font-size: .85rem; font-weight: 700; padding: 8px 14px; cursor: pointer;
+}
+.grp-btn + .grp-btn { border-left: 1px solid var(--line); }
+.grp-btn.active { background: var(--accent); color: #fff; }
+
 .danger-btn { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
 .danger-btn:hover { background: var(--danger); color: #fff; }
 .save-note { font-size: .78rem; color: var(--sub); margin: -4px 0 10px; }
