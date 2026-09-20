@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>カード明細 支出分析 💳</title>
+  <link rel="stylesheet" href="css/expense.css">
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <h1>💳 カード明細 支出分析</h1>
+      <p class="tagline">クレジットカードの明細CSVを読み込んで、支出をカテゴリ別・月別に見える化します</p>
+    </div>
+  </header>
+
+  <main>
+    <p class="privacy-note">
+      🔒 読み込んだ明細は<strong>この端末の中だけ</strong>で処理され、どこにも送信されません
+      （このアプリにはサーバーもアカウントもありません）。
+    </p>
+
+    <!-- 読み込みエリア -->
+    <section id="drop" class="drop">
+      <div class="drop-inner">
+        <p class="drop-title">明細CSVをドラッグ＆ドロップ</p>
+        <p class="drop-sub">または</p>
+        <label class="btn file-btn">
+          ファイルを選ぶ
+          <input id="file" type="file" accept=".csv,text/csv" hidden>
+        </label>
+        <p class="drop-hint">
+          楽天カード・三井住友・JCB・イオンカードなど、各社のCSVに対応。<br>
+          文字コード（UTF-8 / Shift_JIS）は自動判定します。
+        </p>
+      </div>
+    </section>
+
+    <div id="status" class="status"></div>
+
+    <!-- 列マッピング -->
+    <section id="mapping" class="card hidden">
+      <h2>列の対応づけ</h2>
+      <p class="field-hint">自動推定した列を確認してください。違う場合は選び直せます。</p>
+      <div class="map-row">
+        <label>日付の列
+          <select id="col-date"></select>
+        </label>
+        <label>店名・内容の列
+          <select id="col-desc"></select>
+        </label>
+        <label>金額の列
+          <select id="col-amount"></select>
+        </label>
+      </div>
+      <label class="check">
+        <input id="opt-header" type="checkbox" checked>
+        1行目は見出し行
+      </label>
+      <div class="preview-wrap">
+        <table id="preview" class="preview"></table>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-analyze" class="btn">分析する 📊</button>
+      </div>
+    </section>
+
+    <!-- 結果 -->
+    <section id="results" class="hidden">
+      <div class="toolbar">
+        <div id="summary" class="summary"></div>
+        <div class="actions">
+          <select id="month-filter" class="select"></select>
+          <button id="btn-reset" class="btn ghost">別のファイルを読み込む</button>
+        </div>
+      </div>
+
+      <div class="charts">
+        <div class="card chart-card">
+          <h2>カテゴリ別</h2>
+          <div id="chart-category"></div>
+        </div>
+        <div class="card chart-card">
+          <h2>月別の支出</h2>
+          <div id="chart-month"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>明細（カテゴリは変更できます）</h2>
+        <p class="field-hint">カテゴリのプルダウンを変えると、その店名の分類ルールとして次回以降も記憶されます。</p>
+        <div class="preview-wrap">
+          <table id="tx-table" class="tx-table"></table>
+        </div>
+      </div>
+    </section>
+
+    <p class="credit">HTML / CSS / バニラJS・外部ライブラリなし・完全オフライン動作</p>
+  </main>
+
+  <script src="js/expense.js"></script>
+</body>
+</html>
