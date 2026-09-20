@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>カード明細 支出分析 💳</title>
+  <!-- セキュリティ: 外部への通信を一切許可しない（明細データが外部送信されないことを技術的に保証）。
+       読み込み/実行は同一オリジンのみ。style属性の動的付与のためstyleのみunsafe-inlineを許可。 -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="no-referrer">
+  <link rel="stylesheet" href="css/expense.css">
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#2472c8">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="支出分析">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <h1>💳 カード明細 支出分析</h1>
+      <p class="tagline">クレジットカードの明細CSVを読み込んで、支出をカテゴリ別・月別に見える化します</p>
+    </div>
+  </header>
+
+  <main>
+    <p class="privacy-note">
+      🔒 読み込んだ明細は<strong>この端末の中だけ</strong>で処理され、どこにも送信されません
+      （このアプリにはサーバーもアカウントもありません）。
+    </p>
+
+    <!-- 読み込みエリア -->
+    <section id="ingest">
+      <div class="mode-tabs" role="tablist">
+        <button id="mode-csv" class="mode-tab active" role="tab">📄 CSVファイル</button>
+        <button id="mode-text" class="mode-tab" role="tab">📋 テキスト貼り付け</button>
+      </div>
+
+      <div id="drop" class="drop">
+        <div class="drop-inner">
+          <p class="drop-title">明細CSVをドラッグ＆ドロップ</p>
+          <p class="drop-sub">または</p>
+          <label class="btn file-btn">
+            ファイルを選ぶ
+            <input id="file" type="file" accept=".csv,text/csv" hidden>
+          </label>
+          <p class="drop-hint">
+            楽天カード・三井住友・JCB・イオンカードなど、各社のCSVに対応。<br>
+            文字コード（UTF-8 / Shift_JIS）は自動判定します。
+          </p>
+        </div>
+      </div>
+
+      <div id="paste-area" class="paste-area hidden">
+        <p class="field-hint">
+          カードアプリやWeb明細の画面をコピーして、下に貼り付けてください。
+          「日付・店名・金額」が1行ずつ並んでいれば自動で読み取ります。
+        </p>
+        <textarea id="paste-input" class="paste-input" rows="8"
+          placeholder="例）&#10;2026/01/05 AMAZON.CO.JP ￥3,980&#10;1/6 スターバックス 渋谷 620円&#10;2026/02/01 ドコモ 4,400"></textarea>
+        <button id="btn-parse-text" class="btn">この内容を解析 📊</button>
+      </div>
+    </section>
+
+    <!-- 連携方法（スマホのカードアプリから送る） -->
+    <section class="help">
+      <button id="help-toggle" class="help-toggle">📲 スマホのカードアプリと連携する方法</button>
+      <div id="help-body" class="help-body hidden">
+        <p class="privacy-note">
+          🔒 どの方法でも、明細は端末内で処理されどこにも送信されません。
+        </p>
+        <h3>共通の準備：ホーム画面に追加（アプリ化）</h3>
+        <ol>
+          <li>Safari／Chrome でこのページを開く</li>
+          <li>共有ボタン →「ホーム画面に追加」でインストール（オフラインでも起動できます）</li>
+        </ol>
+
+        <h3>iPhone：ショートカットで共有シートから送る</h3>
+        <p class="field-hint">
+          iOS標準の「ショートカット」アプリで、共有シートからこのアプリへ明細テキストを渡せます
+          （iOSはPWAの共有ターゲット受信に非対応のため、この方法が確実です）。
+        </p>
+        <ol>
+          <li>「ショートカット」アプリで新規作成 →「共有シートに表示」をオン、受け取る種類を「テキスト」に</li>
+          <li>アクション「URLを開く」を追加し、URLに次を設定：<br>
+            <code>https://（このページのURL）/expense.html#paste=[入力を渡す：URLエンコード]</code></li>
+          <li>カードアプリ／Web明細で明細を選択 → 共有 → 作成したショートカットを選ぶと、このアプリが開いて自動解析します</li>
+        </ol>
+
+        <h3>Android：共有シートから直接（PWA共有ターゲット）</h3>
+        <p class="field-hint">
+          ホーム画面に追加すると、カードアプリの「共有」先にこのアプリが表示されます。
+          明細テキストを共有すると自動で解析します。
+        </p>
+
+        <h3>いちばん簡単：コピー＆貼り付け</h3>
+        <p class="field-hint">
+          明細画面を長押しでコピー →「📋 テキスト貼り付け」に貼るだけ。全端末で確実に動きます。
+        </p>
+      </div>
+    </section>
+
+    <div id="status" class="status"></div>
+
+    <!-- 列マッピング -->
+    <section id="mapping" class="card hidden">
+      <h2>列の対応づけ</h2>
+      <p class="field-hint">自動推定した列を確認してください。違う場合は選び直せます。</p>
+      <div class="map-row">
+        <label>日付の列
+          <select id="col-date"></select>
+        </label>
+        <label>店名・内容の列
+          <select id="col-desc"></select>
+        </label>
+        <label>金額の列
+          <select id="col-amount"></select>
+        </label>
+      </div>
+      <label class="check">
+        <input id="opt-header" type="checkbox" checked>
+        1行目は見出し行
+      </label>
+      <div class="preview-wrap">
+        <table id="preview" class="preview"></table>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-analyze" class="btn">分析する 📊</button>
+      </div>
+    </section>
+
+    <!-- 結果 -->
+    <section id="results" class="hidden">
+      <div class="toolbar">
+        <div id="summary" class="summary"></div>
+        <div class="actions">
+          <select id="month-filter" class="select"></select>
+          <button id="btn-reset" class="btn ghost">別のファイルを読み込む</button>
+        </div>
+      </div>
+
+      <div class="charts">
+        <div class="card chart-card">
+          <h2>カテゴリ別</h2>
+          <div id="chart-category"></div>
+        </div>
+        <div class="card chart-card">
+          <h2>月別の支出</h2>
+          <div id="chart-month"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>明細（カテゴリは変更できます）</h2>
+        <p class="field-hint">カテゴリのプルダウンを変えると、その店名の分類ルールとして次回以降も記憶されます。</p>
+        <div class="preview-wrap">
+          <table id="tx-table" class="tx-table"></table>
+        </div>
+      </div>
+    </section>
+
+    <p class="credit">HTML / CSS / バニラJS・外部ライブラリなし・完全オフライン動作</p>
+  </main>
+
+  <script src="js/expense.js"></script>
+</body>
+</html>
