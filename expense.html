@@ -44,13 +44,14 @@
           <p class="drop-title">明細ファイル（CSV / PDF）を選ぶ</p>
           <p class="drop-sub">ドラッグ＆ドロップ、または</p>
           <label class="btn file-btn">
-            ファイルを選ぶ
-            <input id="file" type="file" accept=".csv,text/csv,.pdf,application/pdf" hidden>
+            ファイルを選ぶ（複数可）
+            <input id="file" type="file" accept=".csv,text/csv,.pdf,application/pdf" multiple hidden>
           </label>
           <p class="drop-hint">
             楽天カード・三井住友・JCB・イオンカードなど、各社のCSV/PDF明細に対応。<br>
+            <strong>複数月をまとめて選択</strong>すると合算して分析します（月別の推移も表示）。<br>
             文字コード（UTF-8 / Shift_JIS）は自動判定。PDFは端末内で文字を読み取ります。<br>
-            OneDrive等のクラウド上のファイルも、この「ファイルを選ぶ」から開けます。
+            Google Drive等のクラウド上のファイルも、この「ファイルを選ぶ」から開けます。
           </p>
         </div>
       </div>
@@ -143,15 +144,34 @@
         </div>
       </div>
 
+      <!-- 統計量 -->
+      <div class="card">
+        <h2>統計量</h2>
+        <div id="stats" class="stats"></div>
+      </div>
+
       <div class="charts">
         <div class="card chart-card">
           <h2>カテゴリ別</h2>
           <div id="chart-category"></div>
         </div>
         <div class="card chart-card">
-          <h2>月別の支出</h2>
+          <h2>月別の支出（前月比つき）</h2>
           <div id="chart-month"></div>
+          <div id="month-table"></div>
         </div>
+      </div>
+
+      <div class="card">
+        <h2>カテゴリ別の月推移</h2>
+        <p class="field-hint">各月の棒をカテゴリ色で積み上げています。凡例の色はカテゴリ別グラフと共通です。</p>
+        <div id="chart-cat-trend"></div>
+      </div>
+
+      <div class="card">
+        <h2>よく使う店 ランキング</h2>
+        <p class="field-hint">支出額の多い順（同じ店名でまとめています）。表示中の期間が対象です。</p>
+        <div id="merchants"></div>
       </div>
 
       <div class="card">
