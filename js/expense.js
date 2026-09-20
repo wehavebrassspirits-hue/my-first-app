@@ -89,6 +89,7 @@
   let transactions = []; // {date, desc, amount, category, key, source}
   let overrides = loadOverrides();
   let lastSource = '';   // 単一ファイル/貼り付け時のカード名（＝ファイル名等）
+  let lastMonth = '';    // 単一ファイル時のファイル名から推定した年月（日付が読めない時の補完）
 
   // ---- DOM ----------------------------------------------------------------
   const $ = (id) => document.getElementById(id);
@@ -196,6 +197,17 @@
     return m ? `${m[1]}-${m[2]}` : '不明';
   }
 
+  // ファイル名から年月（YYYY-MM）を推定（例: 202606.csv → 2026-06）
+  function monthFromName(name) {
+    const m = String(name || '').match(/(20\d{2})[-_.／/]?(0[1-9]|1[0-2])/);
+    return m ? `${m[1]}-${m[2]}` : '';
+  }
+
+  // 明細の月キー。保存済みの t.month があればそれを、無ければ日付から判定。
+  function monthKey(t) {
+    return t.month || monthOf(t.date);
+  }
+
   // 半角カナ→全角、全角英数→半角などを揃える（明細は半角カナが多いため重要）
   function nfkc(s) {
     try { return String(s).normalize('NFKC'); } catch { return String(s); }
@@ -259,13 +271,14 @@
       try {
         const buf = await readArrayBuffer(f);
         const label = f.name.replace(/\.[^.]+$/, ''); // 拡張子を除いたファイル名
+        const fmonth = monthFromName(f.name);         // ファイル名の年月（日付補完用）
         let tuples = [];
         if (isPdf(f, buf)) {
           const text = await extractPdfText(buf);
-          tuples = parseStatementText(text).map(t => ({ ...t, source: label }));
+          tuples = parseStatementText(text).map(t => ({ ...t, source: label, fmonth }));
         } else {
           const rows = parseCSV(decodeBuffer(buf));
-          tuples = csvRowsToTuples(rows, label);
+          tuples = csvRowsToTuples(rows, label).map(t => ({ ...t, fmonth }));
         }
         if (tuples.length) all.push(...tuples);
         else skipped.push(f.name);
@@ -290,6 +303,7 @@
     if (!file) return;
     status('読み込み中…');
     lastSource = file.name.replace(/\.[^.]+$/, '');
+    lastMonth = monthFromName(file.name);
     readArrayBuffer(file).then(async (buf) => {
       try {
         if (isPdf(file, buf)) {
@@ -502,7 +516,10 @@
       const desc = (t.desc || '').trim() || '(名称なし)';
       const date = normalizeDate(t.date || '');
       const source = (t.source || lastSource || '').trim() || '（不明）';
-      transactions.push({ date, desc, amount: t.amount, key: normalizeKey(desc), category: categorize(desc), source });
+      // 日付が読めない明細は、ファイル名の年月（例 202606）で月を補完
+      const mo = monthOf(date);
+      const month = mo !== '不明' ? mo : ((t.fmonth || lastMonth) || '不明');
+      transactions.push({ date, desc, amount: t.amount, key: normalizeKey(desc), category: categorize(desc), source, month });
     }
     if (transactions.length === 0) {
       status('有効な明細が見つかりませんでした。内容や列の対応づけを確認してください。', 'error');
@@ -547,7 +564,7 @@
   }
 
   function buildMonthFilter() {
-    const months = [...new Set(transactions.map(t => monthOf(t.date)))].sort();
+    const months = [...new Set(transactions.map(t => monthKey(t)))].sort();
     const sel = $('month-filter');
     sel.innerHTML = '<option value="">全期間</option>' +
       months.map(m => `<option value="${m}">${m}</option>`).join('');
@@ -555,7 +572,7 @@
 
   function currentTx() {
     const m = $('month-filter').value;
-    return m ? transactions.filter(t => monthOf(t.date) === m) : transactions;
+    return m ? transactions.filter(t => monthKey(t) === m) : transactions;
   }
 
   function render() {
@@ -590,7 +607,7 @@
     const spend = tx.filter(t => t.amount > 0);
     const amounts = spend.map(t => t.amount);
     const total = tx.reduce((a, t) => a + t.amount, 0);
-    const months = new Set(tx.map(t => monthOf(t.date)).filter(m => m !== '不明')).size || 1;
+    const months = new Set(tx.map(t => monthKey(t)).filter(m => m !== '不明')).size || 1;
     const tiles = [
       ['合計', yen(total)],
       ['支出件数', spend.length + '件'],
@@ -657,7 +674,7 @@
   function renderMonthChart() {
     const byMonth = {};
     for (const t of transactions) {
-      const m = monthOf(t.date);
+      const m = monthKey(t);
       byMonth[m] = (byMonth[m] || 0) + t.amount;
     }
     const entries = Object.entries(byMonth).sort();
@@ -681,7 +698,7 @@
   function monthlyTotals() {
     const byMonth = {};
     for (const t of transactions) {
-      const m = monthOf(t.date);
+      const m = monthKey(t);
       if (m === '不明') continue;
       byMonth[m] = (byMonth[m] || 0) + t.amount;
     }
@@ -694,7 +711,7 @@
     if (entries.length === 0) { $('month-table').innerHTML = ''; return; }
     const countByMonth = {};
     for (const t of transactions) {
-      const m = monthOf(t.date);
+      const m = monthKey(t);
       if (m !== '不明') countByMonth[m] = (countByMonth[m] || 0) + 1;
     }
     let html = '<table class="mini-table"><thead><tr><th>月</th><th class="num">合計</th><th class="num">前月比</th><th class="num">件数</th></tr></thead><tbody>';
@@ -724,7 +741,7 @@
     const monthTotal = {};
     for (const t of transactions) {
       if (t.amount <= 0) continue;
-      const m = monthOf(t.date);
+      const m = monthKey(t);
       if (m === '不明') continue;
       (grid[m] = grid[m] || {})[t.category] = (grid[m]?.[t.category] || 0) + t.amount;
       monthTotal[m] = (monthTotal[m] || 0) + t.amount;
@@ -883,7 +900,7 @@
   fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
   $('mode-csv').addEventListener('click', () => setMode('csv'));
   $('mode-text').addEventListener('click', () => setMode('text'));
-  $('btn-parse-text').addEventListener('click', () => { lastSource = '貼り付け'; analyzeText($('paste-input').value); });
+  $('btn-parse-text').addEventListener('click', () => { lastSource = '貼り付け'; lastMonth = ''; analyzeText($('paste-input').value); });
   const help = $('help-toggle');
   if (help) help.addEventListener('click', () => $('help-body').classList.toggle('hidden'));
   $('btn-analyze').addEventListener('click', analyze);
