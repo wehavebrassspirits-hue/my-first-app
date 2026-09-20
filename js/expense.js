@@ -343,14 +343,25 @@
     return null;
   }
 
+  // 見出しからカード会社を推定（分かればカード別内訳のラベルに使う）
+  function detectIssuer(rows) {
+    const head = rows.slice(0, 4).map(r => (r || []).join(',')).join('\n');
+    if (/利用店名・商品名/.test(head)) return '楽天カード';
+    if (/三井住友|ｖｐａｓｓ|vpass/i.test(head)) return '三井住友カード';
+    if (/ＭＵＦＧ|mufg|ニコス|nicos|dcカード/i.test(head)) return 'MUFG/ニコス';
+    if (/ｊｃｂ|jcb/i.test(head)) return 'JCB';
+    if (/ｉｏｎ|イオンカード|aeon/i.test(head)) return 'イオンカード';
+    return '';
+  }
+
   // CSV行を、見出し・列を自動推定して {date,desc,amount,source} に変換（複数ファイル用・非対話）
-  // カード区切り行があればカード名を source に付与。無ければ引数 source（ファイル名等）を使う。
+  // カード区切り行があればカード名を source に付与。無ければ会社推定→引数 source（ファイル名等）。
   function csvRowsToTuples(rows, source) {
     if (!rows || rows.length === 0) return [];
     const g = guessColumns(rows, true);
     if (g.amountCol < 0) return [];
     const out = [];
-    let currentCard = source || '';
+    let currentCard = detectIssuer(rows) || source || '';
     for (const r of rows) {
       const card = cardHeaderName(r);
       if (card) { currentCard = card; continue; }        // カード区切り行
@@ -411,7 +422,8 @@
     header.forEach((h, i) => {
       const n = String(h);
       if (dateCol < 0 && /日付|利用日|ご利用日|date/i.test(n)) dateCol = i;
-      if (amountCol < 0 && /金額|利用額|支払|amount|price|ご利用金額/i.test(n)) amountCol = i;
+      // 「支払方法」等を金額と誤認しないよう、金額系は「金額/請求/総額」を要求（方法は除外）
+      if (amountCol < 0 && !/方法|区分|回数/.test(n) && /利用金額|ご利用金額|請求金額|請求額|支払総額|ご請求|金額|利用額|amount|price/i.test(n)) amountCol = i;
       if (descCol < 0 && /店名|内容|利用先|摘要|ご利用先|加盟店|明細|description|商品/i.test(n)) descCol = i;
     });
 
