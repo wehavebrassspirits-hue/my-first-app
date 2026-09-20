@@ -90,6 +90,8 @@
   let overrides = loadOverrides();
   let lastSource = '';   // 単一ファイル/貼り付け時のカード名（＝ファイル名等）
   let lastMonth = '';    // 単一ファイル時のファイル名から推定した年月（日付が読めない時の補完）
+  let catSelected = '';  // カテゴリ別バーで選択中のカテゴリ
+  let monthSelected = ''; // 月別バーで選択中の月
 
   // ---- DOM ----------------------------------------------------------------
   const $ = (id) => document.getElementById(id);
@@ -672,8 +674,9 @@
     for (const [cat, amt] of entries) {
       const pct = (amt / total * 100);
       const color = CAT_COLORS[cat] || '#9e9e9e';
+      const sel = catSelected === cat ? ' selected' : '';
       html += `
-        <div class="bar-row">
+        <div class="bar-row clickable${sel}" data-cat="${escapeHtml(cat)}">
           <div class="bar-label"><span class="dot" style="background:${color}"></span>${escapeHtml(cat)}</div>
           <div class="bar-track"><div class="bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div></div>
           <div class="bar-val">${yen(amt)} <span class="bar-pct">${pct.toFixed(0)}%</span></div>
@@ -681,6 +684,7 @@
     }
     html += '</div>';
     $('chart-category').innerHTML = html;
+    renderCatDetail();
   }
 
   function renderMonthChart() {
@@ -695,8 +699,9 @@
     let html = '<div class="month-bars">';
     for (const [m, amt] of entries) {
       const h = Math.max(2, amt / max * 140);
+      const sel = monthSelected === m ? ' selected' : '';
       html += `
-        <div class="mbar" title="${m}: ${yen(amt)}">
+        <div class="mbar clickable${sel}" data-month="${m}" title="${m}: ${yen(amt)}">
           <div class="mbar-val">${yen(amt)}</div>
           <div class="mbar-fill" style="height:${h}px"></div>
           <div class="mbar-label">${m.replace(/^\d{4}-/, '')}月</div>
@@ -704,6 +709,38 @@
     }
     html += '</div>';
     $('chart-month').innerHTML = entries.length ? html : '<p class="field-hint">月別データがありません。</p>';
+    renderMonthDetail();
+  }
+
+  // ---- バー内訳（金額順） -------------------------------------------------
+  // 明細の1行表示（金額の多い順に並べたリスト用）
+  function detailRows(list) {
+    const rows = [...list].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+    let html = '<table class="mini-table detail-table"><thead><tr><th>店名・内容</th><th class="num">金額</th><th>日付</th></tr></thead><tbody>';
+    for (const t of rows) {
+      html += `<tr><td>${escapeHtml(t.desc)}</td><td class="num ${t.amount < 0 ? 'refund' : ''}">${yen(t.amount)}</td><td class="nowrap">${escapeHtml(t.date || monthKey(t))}</td></tr>`;
+    }
+    html += '</tbody></table>';
+    return html;
+  }
+
+  function renderCatDetail() {
+    const el = $('cat-detail');
+    if (!el) return;
+    if (!catSelected) { el.innerHTML = ''; return; }
+    const list = currentTx().filter(t => t.category === catSelected);
+    const sum = list.reduce((a, t) => a + t.amount, 0);
+    el.innerHTML = `<div class="detail-head">「${escapeHtml(catSelected)}」の内訳（金額順） 計 ${yen(sum)} ／ ${list.length}件 <button class="detail-close" data-close="cat">✕</button></div>` + detailRows(list);
+  }
+
+  function renderMonthDetail() {
+    const el = $('month-detail');
+    if (!el) return;
+    if (!monthSelected) { el.innerHTML = ''; return; }
+    const list = transactions.filter(t => monthKey(t) === monthSelected);
+    const sum = list.reduce((a, t) => a + t.amount, 0);
+    const label = monthSelected.replace(/^(\d{4})-/, '$1年') + '月';
+    el.innerHTML = `<div class="detail-head">${escapeHtml(label)}の内訳（金額順） 計 ${yen(sum)} ／ ${list.length}件 <button class="detail-close" data-close="month">✕</button></div>` + detailRows(list);
   }
 
   // 月別合計を昇順で返す（全期間・フィルタ非依存）
@@ -920,6 +957,27 @@
   const btnClear = $('btn-clear');
   if (btnClear) btnClear.addEventListener('click', clearData);
   $('month-filter').addEventListener('change', render);
+  // 棒グラフのタップで内訳（金額順）をトグル表示
+  $('chart-category').addEventListener('click', (e) => {
+    const row = e.target.closest('[data-cat]');
+    if (!row) return;
+    const c = row.getAttribute('data-cat');
+    catSelected = (catSelected === c) ? '' : c;
+    renderCategoryChart(currentTx().filter(t => t.amount > 0));
+  });
+  $('chart-month').addEventListener('click', (e) => {
+    const bar = e.target.closest('[data-month]');
+    if (!bar) return;
+    const m = bar.getAttribute('data-month');
+    monthSelected = (monthSelected === m) ? '' : m;
+    renderMonthChart();
+  });
+  $('cat-detail').addEventListener('click', (e) => {
+    if (e.target.closest('[data-close]')) { catSelected = ''; renderCategoryChart(currentTx().filter(t => t.amount > 0)); }
+  });
+  $('month-detail').addEventListener('click', (e) => {
+    if (e.target.closest('[data-close]')) { monthSelected = ''; renderMonthChart(); }
+  });
   $('opt-header').addEventListener('change', () => showMapping());
   ['col-date', 'col-desc', 'col-amount'].forEach(id =>
     $(id).addEventListener('change', () => renderPreview($('opt-header').checked)));
