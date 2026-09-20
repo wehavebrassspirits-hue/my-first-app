@@ -1,6 +1,6 @@
 /* カード明細 支出分析 — Service Worker（オフライン動作用）
    明細データは一切キャッシュ・送信しません。アプリ本体の静的ファイルのみをキャッシュします。 */
-const CACHE = 'expense-v2';
+const CACHE = 'expense-v3';
 const ASSETS = [
   'expense.html',
   'css/expense.css',

@@ -44,13 +44,14 @@
           <p class="drop-title">明細ファイル（CSV / PDF）を選ぶ</p>
           <p class="drop-sub">ドラッグ＆ドロップ、または</p>
           <label class="btn file-btn">
-            ファイルを選ぶ
-            <input id="file" type="file" accept=".csv,text/csv,.pdf,application/pdf" hidden>
+            ファイルを選ぶ（複数可）
+            <input id="file" type="file" accept=".csv,text/csv,.pdf,application/pdf" multiple hidden>
           </label>
           <p class="drop-hint">
             楽天カード・三井住友・JCB・イオンカードなど、各社のCSV/PDF明細に対応。<br>
+            <strong>複数月をまとめて選択</strong>すると合算して分析します（月別の推移も表示）。<br>
             文字コード（UTF-8 / Shift_JIS）は自動判定。PDFは端末内で文字を読み取ります。<br>
-            OneDrive等のクラウド上のファイルも、この「ファイルを選ぶ」から開けます。
+            Google Drive等のクラウド上のファイルも、この「ファイルを選ぶ」から開けます。
           </p>
         </div>
       </div>

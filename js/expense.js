@@ -211,74 +211,135 @@
     return head[0] === 0x25 && head[1] === 0x50 && head[2] === 0x44 && head[3] === 0x46;
   }
 
+  function readArrayBuffer(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = () => reject(r.error || new Error('read error'));
+      r.readAsArrayBuffer(file);
+    });
+  }
+
+  // 複数ファイル対応のエントリ。1件ならこれまで通り（CSVは列マッピング画面）、
+  // 複数ならすべて解析して合算する。
+  async function handleFiles(fileList) {
+    const files = Array.from(fileList || []);
+    if (files.length === 0) return;
+    if (files.length === 1) { handleFile(files[0]); return; }
+
+    // 複数まとめて解析
+    const all = [];
+    const skipped = [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      status(`解析中… (${i + 1}/${files.length}) ${f.name}`);
+      try {
+        const buf = await readArrayBuffer(f);
+        let tuples = [];
+        if (isPdf(f, buf)) {
+          const text = await extractPdfText(buf);
+          tuples = parseStatementText(text);
+        } else {
+          const rows = parseCSV(decodeBuffer(buf));
+          tuples = csvRowsToTuples(rows);
+        }
+        if (tuples.length) all.push(...tuples);
+        else skipped.push(f.name);
+      } catch (err) {
+        skipped.push(f.name + '（読み取り失敗）');
+      }
+    }
+
+    if (all.length === 0) {
+      status('どのファイルからも明細を読み取れませんでした。形式をご確認ください。', 'error');
+      return;
+    }
+    const ok = finalizeTransactions(all);
+    if (ok) {
+      const note = `${files.length}ファイル中 ${files.length - skipped.length}件を読み込み、明細 ${all.length}件を合算しました。`
+        + (skipped.length ? ` 読み取れなかった: ${skipped.join(', ')}` : '');
+      status(note, skipped.length ? 'error' : '');
+    }
+  }
+
   function handleFile(file) {
     if (!file) return;
     status('読み込み中…');
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const buf = e.target.result;
+    readArrayBuffer(file).then(async (buf) => {
       try {
-        if (isPdf(file, buf)) { handlePdf(buf); return; }
+        if (isPdf(file, buf)) {
+          status('PDFを解析中…（初回は少し時間がかかります）');
+          const text = await extractPdfText(buf);
+          if (!text.trim()) {
+            status('このPDFから文字を取り出せませんでした（画像として保存されたPDFの可能性）。明細画面をコピーして「テキスト貼り付け」をお試しください。', 'error');
+            return;
+          }
+          setMode('text');
+          $('paste-input').value = text;
+          analyzeText(text);
+          return;
+        }
         const text = decodeBuffer(buf);
         rawRows = parseCSV(text);
         if (rawRows.length === 0) { status('データが見つかりませんでした。', 'error'); return; }
         status('');
         showMapping();
       } catch (err) {
-        status('読み込みに失敗しました: ' + err.message, 'error');
+        status('読み込みに失敗しました: ' + (err && err.message ? err.message : err), 'error');
       }
-    };
-    reader.onerror = () => status('ファイルを読めませんでした。', 'error');
-    reader.readAsArrayBuffer(file);
+    }).catch(() => status('ファイルを読めませんでした。', 'error'));
   }
 
-  // ---- PDF明細の読み取り（端末内で処理・外部送信なし） ---------------------
-  // pdf.js（同梱・レガシービルド）で文字を抽出し、行を復元してテキスト解析に渡す。
-  async function handlePdf(arrayBuffer) {
-    status('PDFを解析中…（初回は少し時間がかかります）');
-    try {
-      // パスは文書のベースURL基準で解決（GitHub Pagesのサブパス配信にも対応）
-      const asset = (p) => new URL(p, document.baseURI).href;
-      const pdfjs = await import(asset('vendor/pdfjs/pdf.min.mjs'));
-      pdfjs.GlobalWorkerOptions.workerSrc = asset('vendor/pdfjs/pdf.worker.min.mjs');
-      const doc = await pdfjs.getDocument({
-        data: new Uint8Array(arrayBuffer),
-        cMapUrl: asset('vendor/pdfjs/cmaps/'),
-        cMapPacked: true,
-        isEvalSupported: false
-      }).promise;
+  // CSV行を、見出し・列を自動推定して {date,desc,amount} に変換（複数ファイル用・非対話）
+  function csvRowsToTuples(rows) {
+    if (!rows || rows.length === 0) return [];
+    // 先頭行の推定金額列が数値でなければ見出しとみなす
+    const g0 = guessColumns(rows, false);
+    const firstAmount = g0.amountCol >= 0 ? parseAmount(rows[0][g0.amountCol]) : NaN;
+    const hasHeader = isNaN(firstAmount);
+    const g = guessColumns(rows, hasHeader);
+    const body = hasHeader ? rows.slice(1) : rows;
+    if (g.amountCol < 0) return [];
+    return body.map(r => ({
+      date: r[g.dateCol] || '', desc: r[g.descCol] || '', amount: parseAmount(r[g.amountCol])
+    }));
+  }
 
-      const lines = [];
-      for (let p = 1; p <= doc.numPages; p++) {
-        const page = await doc.getPage(p);
-        const content = await page.getTextContent();
-        // テキスト片をY座標でグループ化し、行として復元（X順に連結）
-        const rows = [];
-        for (const it of content.items) {
-          const s = (it.str || '');
-          if (!s.trim()) continue;
-          const y = it.transform[5], x = it.transform[4];
-          let row = rows.find(r => Math.abs(r.y - y) <= 3);
-          if (!row) { row = { y, items: [] }; rows.push(row); }
-          row.items.push({ x, s });
-        }
-        rows.sort((a, b) => b.y - a.y); // 上から下へ
-        for (const r of rows) {
-          const line = r.items.sort((a, b) => a.x - b.x).map(o => o.s).join(' ').replace(/\s{2,}/g, ' ').trim();
-          if (line) lines.push(line);
-        }
+  // ---- PDF明細の文字抽出（端末内で処理・外部送信なし） ---------------------
+  // pdf.js（同梱・レガシービルド）で文字を抽出し、行を復元してテキストで返す。
+  async function extractPdfText(arrayBuffer) {
+    // パスは文書のベースURL基準で解決（GitHub Pagesのサブパス配信にも対応）
+    const asset = (p) => new URL(p, document.baseURI).href;
+    const pdfjs = await import(asset('vendor/pdfjs/pdf.min.mjs'));
+    pdfjs.GlobalWorkerOptions.workerSrc = asset('vendor/pdfjs/pdf.worker.min.mjs');
+    const doc = await pdfjs.getDocument({
+      data: new Uint8Array(arrayBuffer),
+      cMapUrl: asset('vendor/pdfjs/cmaps/'),
+      cMapPacked: true,
+      isEvalSupported: false
+    }).promise;
+
+    const lines = [];
+    for (let p = 1; p <= doc.numPages; p++) {
+      const page = await doc.getPage(p);
+      const content = await page.getTextContent();
+      // テキスト片をY座標でグループ化し、行として復元（X順に連結）
+      const rows = [];
+      for (const it of content.items) {
+        const s = (it.str || '');
+        if (!s.trim()) continue;
+        const y = it.transform[5], x = it.transform[4];
+        let row = rows.find(r => Math.abs(r.y - y) <= 3);
+        if (!row) { row = { y, items: [] }; rows.push(row); }
+        row.items.push({ x, s });
       }
-      const text = lines.join('\n');
-      if (!text.trim()) {
-        status('このPDFから文字を取り出せませんでした（画像として保存されたPDFの可能性）。明細画面をコピーして「テキスト貼り付け」をお試しください。', 'error');
-        return;
+      rows.sort((a, b) => b.y - a.y); // 上から下へ
+      for (const r of rows) {
+        const line = r.items.sort((a, b) => a.x - b.x).map(o => o.s).join(' ').replace(/\s{2,}/g, ' ').trim();
+        if (line) lines.push(line);
       }
-      setMode('text');
-      $('paste-input').value = text;
-      analyzeText(text);
-    } catch (err) {
-      status('PDFの解析に失敗しました: ' + (err && err.message ? err.message : err), 'error');
     }
+    return lines.join('\n');
   }
 
   // ---- 列マッピング画面 ---------------------------------------------------
@@ -579,7 +640,7 @@
   }
 
   // ---- イベント -----------------------------------------------------------
-  fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+  fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
   $('mode-csv').addEventListener('click', () => setMode('csv'));
   $('mode-text').addEventListener('click', () => setMode('text'));
   $('btn-parse-text').addEventListener('click', () => analyzeText($('paste-input').value));
@@ -597,8 +658,7 @@
   ['dragleave', 'drop'].forEach(ev =>
     drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
   drop.addEventListener('drop', (e) => {
-    const f = e.dataTransfer.files[0];
-    if (f) handleFile(f);
+    if (e.dataTransfer.files && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
   });
 
   // ---- 起動処理 -----------------------------------------------------------
