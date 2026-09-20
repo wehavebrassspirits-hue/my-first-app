@@ -68,7 +68,7 @@
     const tryDecode = (enc) => {
       try {
         const text = new TextDecoder(enc, { fatal: false }).decode(bytes);
-        const bad = (text.match(/�/g) || []).length;
+        const bad = (text.match(/\uFFFD/g) || []).length;
         return { text, bad };
       } catch { return null; }
     };
