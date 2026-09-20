@@ -6,7 +6,7 @@
   <title>カード明細 支出分析 💳</title>
   <!-- セキュリティ: 外部への通信を一切許可しない（明細データが外部送信されないことを技術的に保証）。
        読み込み/実行は同一オリジンのみ。style属性の動的付与のためstyleのみunsafe-inlineを許可。 -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
   <meta name="referrer" content="no-referrer">
   <link rel="stylesheet" href="css/expense.css">
   <!-- PWA -->
@@ -41,15 +41,16 @@
 
       <div id="drop" class="drop">
         <div class="drop-inner">
-          <p class="drop-title">明細CSVをドラッグ＆ドロップ</p>
-          <p class="drop-sub">または</p>
+          <p class="drop-title">明細ファイル（CSV / PDF）を選ぶ</p>
+          <p class="drop-sub">ドラッグ＆ドロップ、または</p>
           <label class="btn file-btn">
             ファイルを選ぶ
-            <input id="file" type="file" accept=".csv,text/csv" hidden>
+            <input id="file" type="file" accept=".csv,text/csv,.pdf,application/pdf" hidden>
           </label>
           <p class="drop-hint">
-            楽天カード・三井住友・JCB・イオンカードなど、各社のCSVに対応。<br>
-            文字コード（UTF-8 / Shift_JIS）は自動判定します。
+            楽天カード・三井住友・JCB・イオンカードなど、各社のCSV/PDF明細に対応。<br>
+            文字コード（UTF-8 / Shift_JIS）は自動判定。PDFは端末内で文字を読み取ります。<br>
+            OneDrive等のクラウド上のファイルも、この「ファイルを選ぶ」から開けます。
           </p>
         </div>
       </div>
