@@ -440,15 +440,17 @@
   }
 
   // ---- 共有・ディープリンクからの取り込み ----------------------------------
-  // iOSショートカットは expense.html#paste=<encoded> で開く。
+  // iOSショートカットは expense.html#paste=<encoded> または ?paste=<encoded> で開く。
   // Android PWA共有ターゲット(GET)は ?text=/&title= で開く。
+  const decodeShare = (v) => { try { return decodeURIComponent(String(v).replace(/\+/g, ' ')); } catch { return String(v); } };
   function ingestFromLocation() {
     let shared = '';
     try {
       const params = new URLSearchParams(location.search);
-      shared = params.get('text') || params.get('title') || '';
+      const q = params.get('paste') || params.get('text') || params.get('title');
+      if (q) shared = decodeShare(q);
       const hash = location.hash.match(/[#&]paste=([^&]+)/);
-      if (hash) shared = decodeURIComponent(hash[1].replace(/\+/g, ' '));
+      if (hash) shared = decodeShare(hash[1]);
     } catch {}
     if (shared && shared.trim()) {
       setMode('text');
