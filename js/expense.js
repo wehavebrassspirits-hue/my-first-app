@@ -145,13 +145,22 @@
   }
 
   // ---- ファイル読み込み ---------------------------------------------------
+  function isPdf(file, buf) {
+    if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') return true;
+    // 先頭が "%PDF"
+    const head = new Uint8Array(buf.slice(0, 5));
+    return head[0] === 0x25 && head[1] === 0x50 && head[2] === 0x44 && head[3] === 0x46;
+  }
+
   function handleFile(file) {
     if (!file) return;
     status('読み込み中…');
     const reader = new FileReader();
     reader.onload = (e) => {
+      const buf = e.target.result;
       try {
-        const text = decodeBuffer(e.target.result);
+        if (isPdf(file, buf)) { handlePdf(buf); return; }
+        const text = decodeBuffer(buf);
         rawRows = parseCSV(text);
         if (rawRows.length === 0) { status('データが見つかりませんでした。', 'error'); return; }
         status('');
@@ -162,6 +171,55 @@
     };
     reader.onerror = () => status('ファイルを読めませんでした。', 'error');
     reader.readAsArrayBuffer(file);
+  }
+
+  // ---- PDF明細の読み取り（端末内で処理・外部送信なし） ---------------------
+  // pdf.js（同梱・レガシービルド）で文字を抽出し、行を復元してテキスト解析に渡す。
+  async function handlePdf(arrayBuffer) {
+    status('PDFを解析中…（初回は少し時間がかかります）');
+    try {
+      // パスは文書のベースURL基準で解決（GitHub Pagesのサブパス配信にも対応）
+      const asset = (p) => new URL(p, document.baseURI).href;
+      const pdfjs = await import(asset('vendor/pdfjs/pdf.min.mjs'));
+      pdfjs.GlobalWorkerOptions.workerSrc = asset('vendor/pdfjs/pdf.worker.min.mjs');
+      const doc = await pdfjs.getDocument({
+        data: new Uint8Array(arrayBuffer),
+        cMapUrl: asset('vendor/pdfjs/cmaps/'),
+        cMapPacked: true,
+        isEvalSupported: false
+      }).promise;
+
+      const lines = [];
+      for (let p = 1; p <= doc.numPages; p++) {
+        const page = await doc.getPage(p);
+        const content = await page.getTextContent();
+        // テキスト片をY座標でグループ化し、行として復元（X順に連結）
+        const rows = [];
+        for (const it of content.items) {
+          const s = (it.str || '');
+          if (!s.trim()) continue;
+          const y = it.transform[5], x = it.transform[4];
+          let row = rows.find(r => Math.abs(r.y - y) <= 3);
+          if (!row) { row = { y, items: [] }; rows.push(row); }
+          row.items.push({ x, s });
+        }
+        rows.sort((a, b) => b.y - a.y); // 上から下へ
+        for (const r of rows) {
+          const line = r.items.sort((a, b) => a.x - b.x).map(o => o.s).join(' ').replace(/\s{2,}/g, ' ').trim();
+          if (line) lines.push(line);
+        }
+      }
+      const text = lines.join('\n');
+      if (!text.trim()) {
+        status('このPDFから文字を取り出せませんでした（画像として保存されたPDFの可能性）。明細画面をコピーして「テキスト貼り付け」をお試しください。', 'error');
+        return;
+      }
+      setMode('text');
+      $('paste-input').value = text;
+      analyzeText(text);
+    } catch (err) {
+      status('PDFの解析に失敗しました: ' + (err && err.message ? err.message : err), 'error');
+    }
   }
 
   // ---- 列マッピング画面 ---------------------------------------------------
