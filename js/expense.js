@@ -246,32 +246,74 @@
     $('preview').innerHTML = html;
   }
 
-  // ---- 分析 ---------------------------------------------------------------
+  // ---- テキスト（貼り付け／共有）からの解析 --------------------------------
+  // 要約・合計などの行は明細ではないので除外する
+  const SUMMARY_RE = /合計|小計|総額|ご請求|請求額|お支払|支払金額|残高|繰越|利用可能|total|balance|subtotal/i;
+
+  function parseStatementText(text) {
+    const out = [];
+    for (let line of String(text).split(/\r?\n/)) {
+      line = line.replace(/\t/g, ' ').trim();
+      if (!line) continue;
+      let date = '';
+      const dm = line.match(/\d{4}[\/\-.年]\s?\d{1,2}[\/\-.月]\s?\d{1,2}日?|\b\d{1,2}[\/\-]\d{1,2}\b/);
+      if (dm) date = normalizeDate(dm[0]);
+      const rest = dm ? line.replace(dm[0], ' ') : line;
+      // 金額トークン（¥・円・カンマ付きを優先し、なければ3桁以上の数字）
+      const amRe = /[△▲\-]?[¥￥]?\s?\d{1,3}(?:,\d{3})+(?:\.\d+)?\s?円?|[△▲\-]?[¥￥]\s?\d+(?:\.\d+)?\s?円?|[△▲\-]?\d+(?:\.\d+)?\s?円/g;
+      let ms = rest.match(amRe), amount = NaN, tok = null;
+      if (ms && ms.length) { tok = ms[ms.length - 1]; amount = parseAmount(tok); }
+      else { const pm = rest.match(/[△▲\-]?\d{3,}/g); if (pm) { tok = pm[pm.length - 1]; amount = parseAmount(tok); } }
+      if (isNaN(amount) || amount === 0) continue;
+      const desc = (rest.replace(tok, ' ').replace(/\s{2,}/g, ' ').trim()) || '(名称なし)';
+      if (SUMMARY_RE.test(desc)) continue;
+      out.push({ date, desc, amount });
+    }
+    return out;
+  }
+
+  // ---- 分析（共通の確定処理） ----------------------------------------------
+  function finalizeTransactions(tuples) {
+    transactions = [];
+    for (const t of tuples) {
+      if (isNaN(t.amount) || t.amount === 0) continue;
+      const desc = (t.desc || '').trim() || '(名称なし)';
+      const date = normalizeDate(t.date || '');
+      transactions.push({ date, desc, amount: t.amount, key: normalizeKey(desc), category: categorize(desc) });
+    }
+    if (transactions.length === 0) {
+      status('有効な明細が見つかりませんでした。内容や列の対応づけを確認してください。', 'error');
+      return false;
+    }
+    status('');
+    drop.classList.add('hidden');
+    $('mapping').classList.add('hidden');
+    $('results').classList.remove('hidden');
+    buildMonthFilter();
+    render();
+    return true;
+  }
+
   function analyze() {
     const hasHeader = $('opt-header').checked;
     const dateCol = +$('col-date').value;
     const descCol = +$('col-desc').value;
     const amountCol = +$('col-amount').value;
     const body = hasHeader ? rawRows.slice(1) : rawRows;
+    const tuples = body.map(r => ({
+      date: r[dateCol] || '', desc: r[descCol] || '', amount: parseAmount(r[amountCol])
+    }));
+    finalizeTransactions(tuples);
+  }
 
-    transactions = [];
-    for (const r of body) {
-      const amount = parseAmount(r[amountCol]);
-      if (isNaN(amount) || amount === 0) continue; // 金額のない行はスキップ
-      const desc = (r[descCol] || '').trim() || '(名称なし)';
-      const date = normalizeDate(r[dateCol] || '');
-      transactions.push({ date, desc, amount, key: normalizeKey(desc), category: categorize(desc) });
-    }
-
-    if (transactions.length === 0) {
-      status('有効な明細が見つかりませんでした。列の対応づけを確認してください。', 'error');
+  // 貼り付け／共有テキストを解析
+  function analyzeText(text) {
+    const tuples = parseStatementText(text);
+    if (!tuples.length) {
+      status('テキストから明細を読み取れませんでした。「日付 店名 金額」の形が含まれているか確認してください。', 'error');
       return;
     }
-    status('');
-    $('mapping').classList.add('hidden');
-    $('results').classList.remove('hidden');
-    buildMonthFilter();
-    render();
+    finalizeTransactions(tuples);
   }
 
   function buildMonthFilter() {
@@ -383,13 +425,47 @@
     rawRows = []; transactions = [];
     $('results').classList.add('hidden');
     $('mapping').classList.add('hidden');
-    drop.classList.remove('hidden');
+    $('ingest').classList.remove('hidden');
     fileInput.value = '';
     status('');
   }
 
+  // ---- 入力モード切替（CSV / テキスト貼り付け） ----------------------------
+  function setMode(mode) {
+    const isCsv = mode === 'csv';
+    $('mode-csv').classList.toggle('active', isCsv);
+    $('mode-text').classList.toggle('active', !isCsv);
+    drop.classList.toggle('hidden', !isCsv);
+    $('paste-area').classList.toggle('hidden', isCsv);
+  }
+
+  // ---- 共有・ディープリンクからの取り込み ----------------------------------
+  // iOSショートカットは expense.html#paste=<encoded> で開く。
+  // Android PWA共有ターゲット(GET)は ?text=/&title= で開く。
+  function ingestFromLocation() {
+    let shared = '';
+    try {
+      const params = new URLSearchParams(location.search);
+      shared = params.get('text') || params.get('title') || '';
+      const hash = location.hash.match(/[#&]paste=([^&]+)/);
+      if (hash) shared = decodeURIComponent(hash[1].replace(/\+/g, ' '));
+    } catch {}
+    if (shared && shared.trim()) {
+      setMode('text');
+      $('paste-input').value = shared;
+      // URLから機微情報を消す
+      try { history.replaceState(null, '', location.pathname); } catch {}
+      analyzeText(shared);
+    }
+  }
+
   // ---- イベント -----------------------------------------------------------
   fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+  $('mode-csv').addEventListener('click', () => setMode('csv'));
+  $('mode-text').addEventListener('click', () => setMode('text'));
+  $('btn-parse-text').addEventListener('click', () => analyzeText($('paste-input').value));
+  const help = $('help-toggle');
+  if (help) help.addEventListener('click', () => $('help-body').classList.toggle('hidden'));
   $('btn-analyze').addEventListener('click', analyze);
   $('btn-reset').addEventListener('click', reset);
   $('month-filter').addEventListener('change', render);
@@ -405,4 +481,12 @@
     const f = e.dataTransfer.files[0];
     if (f) handleFile(f);
   });
+
+  // ---- 起動処理 -----------------------------------------------------------
+  // PWA: Service Worker 登録（オフライン動作 & ホーム画面インストール用）
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+  // 共有・ショートカットからの取り込み
+  ingestFromLocation();
 })();

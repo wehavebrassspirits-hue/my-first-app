@@ -39,6 +39,49 @@ main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 60px; }
 
 .hidden { display: none !important; }
 
+/* --- 入力モードのタブ --- */
+.mode-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.mode-tab {
+  border: 1px solid var(--line); background: var(--card); color: var(--sub);
+  padding: 9px 16px; border-radius: 999px; font-size: .9rem; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: background .15s, color .15s, border-color .15s;
+}
+.mode-tab:hover { border-color: var(--accent); color: var(--accent); }
+.mode-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* --- テキスト貼り付け --- */
+.paste-area {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 16px; padding: 18px; box-shadow: var(--shadow);
+}
+.paste-input {
+  width: 100%; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: .9rem; padding: 12px; border: 1px solid var(--line);
+  border-radius: 10px; resize: vertical; background: #fbfdff; color: var(--ink);
+  margin-bottom: 12px;
+}
+.paste-input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+
+/* --- 連携ヘルプ --- */
+.help { margin: 14px 0; }
+.help-toggle {
+  width: 100%; text-align: left; background: var(--card);
+  border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px;
+  font-size: .92rem; font-weight: 700; color: var(--accent);
+  cursor: pointer; font-family: inherit;
+}
+.help-toggle:hover { border-color: var(--accent); }
+.help-body {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 12px; padding: 4px 18px 16px; margin-top: 8px; box-shadow: var(--shadow);
+}
+.help-body h3 { font-size: .95rem; margin: 18px 0 6px; }
+.help-body ol { margin: 6px 0; padding-left: 20px; font-size: .86rem; line-height: 1.8; }
+.help-body code {
+  background: #eef3f8; border: 1px solid var(--line); border-radius: 6px;
+  padding: 2px 6px; font-size: .82rem; word-break: break-all;
+}
+
 /* --- 読み込みエリア --- */
 .drop {
   border: 2px dashed #b8cbdd; border-radius: 16px;
