@@ -110,13 +110,18 @@
     try { localStorage.setItem(OVERRIDES_KEY, JSON.stringify(overrides)); } catch {}
   }
   // 読み込んだ明細を端末内に保存／復元／消去（外部送信なし）
+  // スキーマ版を持たせ、アプリ更新で解析仕様が変わったら古い保存データは破棄する
+  const TX_SCHEMA = 2;
   function saveTransactions() {
-    try { localStorage.setItem(TX_KEY, JSON.stringify(transactions)); } catch {}
+    try { localStorage.setItem(TX_KEY, JSON.stringify({ s: TX_SCHEMA, t: transactions })); } catch {}
   }
   function loadSavedTransactions() {
     try {
-      const a = JSON.parse(localStorage.getItem(TX_KEY));
-      return Array.isArray(a) ? a : null;
+      const raw = JSON.parse(localStorage.getItem(TX_KEY));
+      if (!raw) return null;
+      if (Array.isArray(raw)) return { stale: true };      // 旧形式（スキーマ以前）
+      if (raw.s !== TX_SCHEMA) return { stale: true };      // スキーマ不一致
+      return Array.isArray(raw.t) ? raw.t : null;
     } catch { return null; }
   }
   function clearSavedData() {
@@ -992,7 +997,12 @@
   // 保存済みの明細があれば復元して結果を表示
   function restoreSaved() {
     const saved = loadSavedTransactions();
-    if (saved && saved.length) {
+    if (saved && saved.stale) {
+      clearSavedData();
+      status('アプリを更新しました。正しく集計するため、お手数ですがファイルをもう一度読み込んでください（古い保存データは消去しました）。', 'error');
+      return false;
+    }
+    if (Array.isArray(saved) && saved.length) {
       transactions = saved;
       showResults();
       status(`前回の${saved.length}件を復元しました（この端末に保存）。`);
