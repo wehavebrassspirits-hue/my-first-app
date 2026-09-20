@@ -2,7 +2,7 @@
    明細データは一切キャッシュ・送信しません。アプリ本体の静的ファイルのみをキャッシュします。
    デプロイ後の取りこぼしを防ぐため、同一オリジンのGETは「ネットワーク優先・キャッシュ更新」。
    （オフライン時のみキャッシュにフォールバック） */
-const CACHE = 'expense-v10';
+const CACHE = 'expense-v13';
 const ASSETS = [
   'expense.html',
   'css/expense.css',

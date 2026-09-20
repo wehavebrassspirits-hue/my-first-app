@@ -20,13 +20,14 @@
       'ラーメン', '一蘭', '一風堂', '日高屋', '幸楽苑', 'うどん', 'そば', '丸亀', 'はなまる', '寿司', 'すし', 'スシロー', 'くら寿司', 'かっぱ', 'はま寿司', '回転',
       '居酒屋', '鳥貴族', '和民', 'ワタミ', '魚民', '串', '餃子', 'ピザ', 'pizza', 'ドミノ', 'domino', 'サブスク弁当', '食堂', 'レストラン', 'restaurant', 'dining', 'bar ', 'ビアガーデン', 'スタバ',
       'ミスタードーナツ', 'ミスド', 'クリスピー', 'フードコート', 'uber eats', 'ウーバー', 'uber', '出前館', 'wolt', 'menu ',
+      'ベルダ', '食店', '飲食', 'キッチン', 'kitchen', 'ビストロ', 'bistro',
     ]],
     ['食費', [
       'スーパー', 'マート', 'mart', 'イオン', 'aeon', 'ライフ', 'life', 'ヤオコー', 'マルエツ', 'サミット', 'コストコ', 'costco', '業務スーパー', '肉のハナマサ',
       'まいばすけっと', 'seiyu', '西友', 'せいゆう', 'gyomu', 'いなげや', 'オーケー', 'ok store', 'ベルク', 'ヤマナカ', 'アピタ', 'ピアゴ', 'カスミ', 'ヨークベニマル', 'マックスバリュ', 'maxvalu',
       'コンビニ', 'セブンイレブン', 'セブン-', '7-eleven', 'seven', 'ローソン', 'lawson', 'ファミリーマート', 'ファミマ', 'familymart', 'ミニストップ', 'ministop', 'デイリーヤマザキ', 'セイコーマート', 'ニューデイズ', 'newdays', 'ポプラ',
       'ベイシア', 'beisia', 'とりせん', 'カスミ', 'ヨークタウン', 'フレッセイ',
-      '自販機', '自動販売', '飲料', 'コカ・コーラ', 'コカコーラ', 'ダイドー', 'ドリンコ', 'ヤクルト',
+      '自販機', '自動販売', 'ジハンキ', 'ジバンキ', '飲料', 'コカ・コーラ', 'コカコーラ', 'コカ', 'ダイドー', 'ドリンコ', 'ヤクルト',
       'コープ', 'coop', '生協', 'カルディ', 'kaldi', '成城石井', 'やまや', '八百屋', '青果', '精肉', '鮮魚', 'ベーカリー', 'パン屋', 'bakery', '酒', 'リカー', 'liquor', 'オーケーストア',
       'ドンキ', 'ドン.キホーテ', 'ドン・キホーテ', 'ローソンストア100', 'ロピア',
     ]],
@@ -40,6 +41,7 @@
       'バス', ' bus', '高速バス', '電車', '運賃',
       'サービスエリア', 'パーキングエリア', 'pa上り', 'pa下り', '上り線', '下り線',
       'オートアールズ', 'オートバックス', 'autobacs', 'イエローハット', 'カー用品', '車検', 'ガソリンスタンド',
+      'イデミツ', 'アポロステーション', 'アポロ', 'jass', 'ja-ss', 'ジャスポート', 'ｼﾞﾔｽﾎﾟ', 'エネオス', 'ｴﾈｵｽ ', 'キグナス', 'ss ',
     ]],
     ['通信', [
       'docomo', 'ドコモ', 'ﾄﾞｺﾓ', 'au', 'kddi', 'softbank', 'ソフトバンク', 'ｿﾌﾄﾊﾞﾝｸ', '楽天モバイル', 'rakuten mobile', 'ahamo', 'povo', 'linemo', 'uqモバイル', 'uq ',
@@ -90,6 +92,8 @@
   let overrides = loadOverrides();
   let lastSource = '';   // 単一ファイル/貼り付け時のカード名（＝ファイル名等）
   let lastMonth = '';    // 単一ファイル時のファイル名から推定した年月（日付が読めない時の補完）
+  let catSelected = '';  // カテゴリ別バーで選択中のカテゴリ
+  let monthSelected = ''; // 月別バーで選択中の月
 
   // ---- DOM ----------------------------------------------------------------
   const $ = (id) => document.getElementById(id);
@@ -497,23 +501,44 @@
   // ---- テキスト（貼り付け／共有）からの解析 --------------------------------
   // 要約・合計などの行は明細ではないので除外する
   const SUMMARY_RE = /合計|小計|総額|ご請求|請求額|お支払|支払金額|残高|繰越|利用可能|total|balance|subtotal/i;
+  // 見出し/請求サマリ等（カード番号マスク・ブランド名・帳票見出し）を除外
+  const EXCLUDE_RE = /[\*＊]{3,}|（visa|（master|（jcb|（american|ゴールドカード|ご利用カード|お支払日|返済方法|引落口座|請求確定日|獲得ポイント|会員様|相談窓口|ご利用明細|利用日\s*利用店名|単位：円/i;
+  // 利用者・支払方法の語（明細の店名から除去する）
+  const PAYER_RE = /(本人|家族|ご本人)[＊*]?/g;
+  const METHOD_RE = /(\d+回払い|一括払い|分割払い|リボ払い|ボーナス|据置|1回払い)/g;
 
   function parseStatementText(text) {
     const out = [];
-    for (let line of String(text).split(/\r?\n/)) {
-      line = line.replace(/\t/g, ' ').trim();
+    for (let raw of String(text).split(/\r?\n/)) {
+      const line = raw.replace(/\t/g, ' ').trim();
       if (!line) continue;
-      let date = '';
+      if (EXCLUDE_RE.test(line)) continue;
       const dm = line.match(/\d{4}[\/\-.年]\s?\d{1,2}[\/\-.月]\s?\d{1,2}日?|\b\d{1,2}[\/\-]\d{1,2}\b/);
-      if (dm) date = normalizeDate(dm[0]);
-      const rest = dm ? line.replace(dm[0], ' ') : line;
-      // 金額トークン（¥・円・カンマ付きを優先し、なければ3桁以上の数字）
-      const amRe = /[△▲\-]?[¥￥]?\s?\d{1,3}(?:,\d{3})+(?:\.\d+)?\s?円?|[△▲\-]?[¥￥]\s?\d+(?:\.\d+)?\s?円?|[△▲\-]?\d+(?:\.\d+)?\s?円/g;
-      let ms = rest.match(amRe), amount = NaN, tok = null;
-      if (ms && ms.length) { tok = ms[ms.length - 1]; amount = parseAmount(tok); }
-      else { const pm = rest.match(/[△▲\-]?\d{3,}/g); if (pm) { tok = pm[pm.length - 1]; amount = parseAmount(tok); } }
+      const date = dm ? normalizeDate(dm[0]) : '';
+      const rest = (dm ? line.slice(dm.index + dm[0].length) : line).trim();
+
+      // 明細表形式（楽天等）: 末尾に数値列が並ぶ → 先頭の数値＝利用金額
+      let amount = NaN, desc = '';
+      const toks = rest.split(/\s+/);
+      let k = toks.length;
+      while (k > 0 && /^[\d,]+$/.test(toks[k - 1])) k--;
+      const numRun = toks.slice(k);
+      if (dm && numRun.length >= 3) {
+        amount = parseAmount(numRun[0]);          // 利用金額
+        desc = toks.slice(0, k).join(' ');
+      } else {
+        // 汎用: ¥・円・カンマ付きを優先し、無ければ最後の金額トークン
+        const amRe = /[△▲\-]?[¥￥]?\s?\d{1,3}(?:,\d{3})+(?:\.\d+)?\s?円?|[△▲\-]?[¥￥]\s?\d+(?:\.\d+)?\s?円?|[△▲\-]?\d+(?:\.\d+)?\s?円/g;
+        let ms = rest.match(amRe), tok = null;
+        if (ms && ms.length) { tok = ms[ms.length - 1]; amount = parseAmount(tok); }
+        else { const pm = rest.match(/[△▲\-]?\d{3,}/g); if (pm) { tok = pm[pm.length - 1]; amount = parseAmount(tok); } }
+        if (tok) desc = rest.replace(tok, ' ');
+      }
       if (isNaN(amount) || amount === 0) continue;
-      const desc = (rest.replace(tok, ' ').replace(/\s{2,}/g, ' ').trim()) || '(名称なし)';
+      // 店名の整形（利用者・支払方法を除去）
+      desc = desc.replace(PAYER_RE, ' ').replace(METHOD_RE, ' ').replace(/\s{2,}/g, ' ').trim();
+      // 店名に文字（かな/漢字/英字/半角カナ）が無い行は明細ではない（合計・リボ欄など）
+      if (!/[A-Za-z぀-ヿ㐀-鿿ｦ-ﾟＡ-Ｚａ-ｚ]/.test(desc)) continue;
       if (SUMMARY_RE.test(desc)) continue;
       out.push({ date, desc, amount });
     }
@@ -672,8 +697,9 @@
     for (const [cat, amt] of entries) {
       const pct = (amt / total * 100);
       const color = CAT_COLORS[cat] || '#9e9e9e';
+      const sel = catSelected === cat ? ' selected' : '';
       html += `
-        <div class="bar-row">
+        <div class="bar-row clickable${sel}" data-cat="${escapeHtml(cat)}">
           <div class="bar-label"><span class="dot" style="background:${color}"></span>${escapeHtml(cat)}</div>
           <div class="bar-track"><div class="bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div></div>
           <div class="bar-val">${yen(amt)} <span class="bar-pct">${pct.toFixed(0)}%</span></div>
@@ -681,6 +707,7 @@
     }
     html += '</div>';
     $('chart-category').innerHTML = html;
+    renderCatDetail();
   }
 
   function renderMonthChart() {
@@ -695,8 +722,9 @@
     let html = '<div class="month-bars">';
     for (const [m, amt] of entries) {
       const h = Math.max(2, amt / max * 140);
+      const sel = monthSelected === m ? ' selected' : '';
       html += `
-        <div class="mbar" title="${m}: ${yen(amt)}">
+        <div class="mbar clickable${sel}" data-month="${m}" title="${m}: ${yen(amt)}">
           <div class="mbar-val">${yen(amt)}</div>
           <div class="mbar-fill" style="height:${h}px"></div>
           <div class="mbar-label">${m.replace(/^\d{4}-/, '')}月</div>
@@ -704,6 +732,38 @@
     }
     html += '</div>';
     $('chart-month').innerHTML = entries.length ? html : '<p class="field-hint">月別データがありません。</p>';
+    renderMonthDetail();
+  }
+
+  // ---- バー内訳（金額順） -------------------------------------------------
+  // 明細の1行表示（金額の多い順に並べたリスト用）
+  function detailRows(list) {
+    const rows = [...list].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+    let html = '<table class="mini-table detail-table"><thead><tr><th>店名・内容</th><th class="num">金額</th><th>日付</th></tr></thead><tbody>';
+    for (const t of rows) {
+      html += `<tr><td>${escapeHtml(t.desc)}</td><td class="num ${t.amount < 0 ? 'refund' : ''}">${yen(t.amount)}</td><td class="nowrap">${escapeHtml(t.date || monthKey(t))}</td></tr>`;
+    }
+    html += '</tbody></table>';
+    return html;
+  }
+
+  function renderCatDetail() {
+    const el = $('cat-detail');
+    if (!el) return;
+    if (!catSelected) { el.innerHTML = ''; return; }
+    const list = currentTx().filter(t => t.category === catSelected);
+    const sum = list.reduce((a, t) => a + t.amount, 0);
+    el.innerHTML = `<div class="detail-head">「${escapeHtml(catSelected)}」の内訳（金額順） 計 ${yen(sum)} ／ ${list.length}件 <button class="detail-close" data-close="cat">✕</button></div>` + detailRows(list);
+  }
+
+  function renderMonthDetail() {
+    const el = $('month-detail');
+    if (!el) return;
+    if (!monthSelected) { el.innerHTML = ''; return; }
+    const list = transactions.filter(t => monthKey(t) === monthSelected);
+    const sum = list.reduce((a, t) => a + t.amount, 0);
+    const label = monthSelected.replace(/^(\d{4})-/, '$1年') + '月';
+    el.innerHTML = `<div class="detail-head">${escapeHtml(label)}の内訳（金額順） 計 ${yen(sum)} ／ ${list.length}件 <button class="detail-close" data-close="month">✕</button></div>` + detailRows(list);
   }
 
   // 月別合計を昇順で返す（全期間・フィルタ非依存）
@@ -920,6 +980,27 @@
   const btnClear = $('btn-clear');
   if (btnClear) btnClear.addEventListener('click', clearData);
   $('month-filter').addEventListener('change', render);
+  // 棒グラフのタップで内訳（金額順）をトグル表示
+  $('chart-category').addEventListener('click', (e) => {
+    const row = e.target.closest('[data-cat]');
+    if (!row) return;
+    const c = row.getAttribute('data-cat');
+    catSelected = (catSelected === c) ? '' : c;
+    renderCategoryChart(currentTx().filter(t => t.amount > 0));
+  });
+  $('chart-month').addEventListener('click', (e) => {
+    const bar = e.target.closest('[data-month]');
+    if (!bar) return;
+    const m = bar.getAttribute('data-month');
+    monthSelected = (monthSelected === m) ? '' : m;
+    renderMonthChart();
+  });
+  $('cat-detail').addEventListener('click', (e) => {
+    if (e.target.closest('[data-close]')) { catSelected = ''; renderCategoryChart(currentTx().filter(t => t.amount > 0)); }
+  });
+  $('month-detail').addEventListener('click', (e) => {
+    if (e.target.closest('[data-close]')) { monthSelected = ''; renderMonthChart(); }
+  });
   $('opt-header').addEventListener('change', () => showMapping());
   ['col-date', 'col-desc', 'col-amount'].forEach(id =>
     $(id).addEventListener('change', () => renderPreview($('opt-header').checked)));

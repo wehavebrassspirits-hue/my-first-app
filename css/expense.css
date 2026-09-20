@@ -190,6 +190,30 @@ table { border-collapse: collapse; width: 100%; font-size: .85rem; }
 .danger-btn:hover { background: var(--danger); color: #fff; }
 .save-note { font-size: .78rem; color: var(--sub); margin: -4px 0 10px; }
 
+/* --- クリック可能なバー・内訳パネル --- */
+.bar-row.clickable, .mbar.clickable { cursor: pointer; }
+.bar-row.clickable { border-radius: 8px; padding: 2px 4px; margin: 0 -4px; transition: background .12s; }
+.bar-row.clickable:hover { background: var(--accent-soft); }
+.bar-row.selected { background: var(--accent-soft); outline: 1px solid var(--accent); }
+.mbar.clickable .mbar-fill { transition: filter .12s; }
+.mbar.clickable:hover .mbar-fill { filter: brightness(1.1); }
+.mbar.selected .mbar-fill { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+.detail { margin-top: 12px; }
+.detail:empty { margin: 0; }
+.detail-head {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: .85rem; font-weight: 700; color: var(--ink);
+  background: var(--accent-soft); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px;
+}
+.detail-close {
+  margin-left: auto; border: none; background: transparent; color: var(--sub);
+  font-size: .95rem; cursor: pointer; padding: 2px 6px; border-radius: 6px;
+}
+.detail-close:hover { background: #fff; color: var(--danger); }
+.detail-table { max-height: 320px; }
+.detail-wrap { overflow-x: auto; }
+
 .status { padding: 10px 0; font-size: .9rem; color: var(--sub); }
 .status.error { color: var(--danger); font-weight: 600; }
 
