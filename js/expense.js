@@ -517,9 +517,37 @@
       `<span class="sum-total">${yen(total)}</span>` +
       `<span class="sum-sub">${tx.length}件 / 平均 ${yen(total / (tx.length || 1))}</span>`;
 
+    renderStats(tx);
     renderCategoryChart(spend);
     renderMonthChart();
+    renderMonthTable();
+    renderCategoryTrend();
+    renderMerchants(spend);
     renderTable(tx);
+  }
+
+  // ---- 統計量 -------------------------------------------------------------
+  function median(nums) {
+    if (!nums.length) return 0;
+    const a = [...nums].sort((x, y) => x - y);
+    const mid = Math.floor(a.length / 2);
+    return a.length % 2 ? a[mid] : (a[mid - 1] + a[mid]) / 2;
+  }
+  function renderStats(tx) {
+    const spend = tx.filter(t => t.amount > 0);
+    const amounts = spend.map(t => t.amount);
+    const total = tx.reduce((a, t) => a + t.amount, 0);
+    const months = new Set(tx.map(t => monthOf(t.date)).filter(m => m !== '不明')).size || 1;
+    const tiles = [
+      ['合計', yen(total)],
+      ['支出件数', spend.length + '件'],
+      ['月平均', yen(total / months)],
+      ['1件平均', yen(amounts.reduce((a, b) => a + b, 0) / (amounts.length || 1))],
+      ['中央値', yen(median(amounts))],
+      ['最高額', yen(amounts.length ? Math.max(...amounts) : 0)],
+    ];
+    $('stats').innerHTML = tiles.map(([k, v]) =>
+      `<div class="stat"><div class="stat-val">${v}</div><div class="stat-key">${k}</div></div>`).join('');
   }
 
   function renderCategoryChart(tx) {
@@ -564,6 +592,113 @@
     }
     html += '</div>';
     $('chart-month').innerHTML = entries.length ? html : '<p class="field-hint">月別データがありません。</p>';
+  }
+
+  // 月別合計を昇順で返す（全期間・フィルタ非依存）
+  function monthlyTotals() {
+    const byMonth = {};
+    for (const t of transactions) {
+      const m = monthOf(t.date);
+      if (m === '不明') continue;
+      byMonth[m] = (byMonth[m] || 0) + t.amount;
+    }
+    return Object.entries(byMonth).sort();
+  }
+
+  // ---- 月別テーブル（前月比・件数） ---------------------------------------
+  function renderMonthTable() {
+    const entries = monthlyTotals();
+    if (entries.length === 0) { $('month-table').innerHTML = ''; return; }
+    const countByMonth = {};
+    for (const t of transactions) {
+      const m = monthOf(t.date);
+      if (m !== '不明') countByMonth[m] = (countByMonth[m] || 0) + 1;
+    }
+    let html = '<table class="mini-table"><thead><tr><th>月</th><th class="num">合計</th><th class="num">前月比</th><th class="num">件数</th></tr></thead><tbody>';
+    let prev = null;
+    for (const [m, amt] of entries) {
+      let mom = '—';
+      if (prev !== null && prev !== 0) {
+        const diff = amt - prev;
+        const pct = diff / Math.abs(prev) * 100;
+        const cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : '');
+        const sign = diff > 0 ? '▲+' : (diff < 0 ? '▼' : '');
+        mom = `<span class="${cls}">${sign}${yen(Math.abs(diff))} (${pct > 0 ? '+' : ''}${pct.toFixed(0)}%)</span>`;
+      }
+      html += `<tr><td>${m}</td><td class="num">${yen(amt)}</td><td class="num">${mom}</td><td class="num">${countByMonth[m] || 0}</td></tr>`;
+      prev = amt;
+    }
+    html += '</tbody></table>';
+    $('month-table').innerHTML = html;
+  }
+
+  // ---- カテゴリ別の月推移（積み上げ棒） ------------------------------------
+  function renderCategoryTrend() {
+    const months = monthlyTotals().map(e => e[0]);
+    if (months.length === 0) { $('chart-cat-trend').innerHTML = '<p class="field-hint">月別データがありません。</p>'; return; }
+    // 月×カテゴリの支出（正の金額のみ）
+    const grid = {}; // month -> {cat: amt}
+    const monthTotal = {};
+    for (const t of transactions) {
+      if (t.amount <= 0) continue;
+      const m = monthOf(t.date);
+      if (m === '不明') continue;
+      (grid[m] = grid[m] || {})[t.category] = (grid[m]?.[t.category] || 0) + t.amount;
+      monthTotal[m] = (monthTotal[m] || 0) + t.amount;
+    }
+    const max = Math.max(...months.map(m => monthTotal[m] || 0), 1);
+    // 凡例（登場カテゴリを合計の多い順）
+    const catTotals = {};
+    for (const m of months) for (const [c, v] of Object.entries(grid[m] || {})) catTotals[c] = (catTotals[c] || 0) + v;
+    const cats = Object.keys(catTotals).sort((a, b) => catTotals[b] - catTotals[a]);
+
+    let bars = '<div class="month-bars">';
+    for (const m of months) {
+      const total = monthTotal[m] || 0;
+      const barH = Math.max(2, total / max * 160);
+      let segs = '';
+      for (const c of cats) {
+        const v = (grid[m] || {})[c] || 0;
+        if (v <= 0) continue;
+        const h = v / total * barH;
+        segs += `<div class="seg" style="height:${h}px;background:${CAT_COLORS[c] || '#9e9e9e'}" title="${m} ${escapeHtml(c)}: ${yen(v)}"></div>`;
+      }
+      bars += `
+        <div class="mbar">
+          <div class="mbar-val">${yen(total)}</div>
+          <div class="stack" style="height:${barH}px">${segs}</div>
+          <div class="mbar-label">${m.replace(/^\d{4}-/, '')}月</div>
+        </div>`;
+    }
+    bars += '</div>';
+    const legend = '<div class="legend">' + cats.map(c =>
+      `<span class="legend-item"><span class="dot" style="background:${CAT_COLORS[c] || '#9e9e9e'}"></span>${escapeHtml(c)}</span>`).join('') + '</div>';
+    $('chart-cat-trend').innerHTML = bars + legend;
+  }
+
+  // ---- よく使う店ランキング -----------------------------------------------
+  function renderMerchants(spend) {
+    const byMerchant = {};
+    for (const t of spend) {
+      const g = byMerchant[t.key] || (byMerchant[t.key] = { name: t.desc, sum: 0, count: 0, cat: t.category });
+      g.sum += t.amount; g.count += 1;
+    }
+    const list = Object.values(byMerchant).sort((a, b) => b.sum - a.sum).slice(0, 15);
+    if (list.length === 0) { $('merchants').innerHTML = '<p class="field-hint">データがありません。</p>'; return; }
+    const max = list[0].sum || 1;
+    let html = '<div class="bars">';
+    for (const g of list) {
+      const pct = g.sum / max * 100;
+      const color = CAT_COLORS[g.cat] || '#9e9e9e';
+      html += `
+        <div class="bar-row">
+          <div class="bar-label" title="${escapeHtml(g.name)}"><span class="dot" style="background:${color}"></span>${escapeHtml(g.name)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div></div>
+          <div class="bar-val">${yen(g.sum)} <span class="bar-pct">${g.count}回</span></div>
+        </div>`;
+    }
+    html += '</div>';
+    $('merchants').innerHTML = html;
   }
 
   function renderTable(tx) {
