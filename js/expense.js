@@ -94,6 +94,7 @@
   let lastMonth = '';    // 単一ファイル時のファイル名から推定した年月（日付が読めない時の補完）
   let catSelected = '';  // カテゴリ別バーで選択中のカテゴリ
   let monthSelected = ''; // 月別バーで選択中の月
+  let groupMode = loadGroupMode(); // 'billing'（請求月）/ 'usage'（利用日）
 
   // ---- DOM ----------------------------------------------------------------
   const $ = (id) => document.getElementById(id);
@@ -120,6 +121,12 @@
   }
   function clearSavedData() {
     try { localStorage.removeItem(TX_KEY); } catch {}
+  }
+  function loadGroupMode() {
+    try { return localStorage.getItem('expense.groupMode') === 'usage' ? 'usage' : 'billing'; } catch { return 'billing'; }
+  }
+  function saveGroupMode() {
+    try { localStorage.setItem('expense.groupMode', groupMode); } catch {}
   }
   function status(msg, type = '') {
     const el = $('status');
@@ -207,8 +214,9 @@
     return m ? `${m[1]}-${m[2]}` : '';
   }
 
-  // 明細の月キー。保存済みの t.month があればそれを、無ければ日付から判定。
+  // 明細の月キー。請求月ベース（ファイル名の年月）／利用日ベースを切替。
   function monthKey(t) {
+    if (groupMode === 'billing') return t.bmonth || t.month || monthOf(t.date);
     return t.month || monthOf(t.date);
   }
 
@@ -279,7 +287,9 @@
         let tuples = [];
         if (isPdf(f, buf)) {
           const text = await extractPdfText(buf);
-          tuples = parseStatementText(text).map(t => ({ ...t, source: label, fmonth }));
+          // カード会社を本文から判定。無ければ statement_* は楽天、他はファイル名
+          const issuer = detectIssuerText(text) || (/^statement/i.test(f.name) ? '楽天カード' : label);
+          tuples = parseStatementText(text).map(t => ({ ...t, source: issuer, fmonth }));
         } else {
           const rows = parseCSV(decodeBuffer(buf));
           tuples = csvRowsToTuples(rows, label).map(t => ({ ...t, fmonth }));
@@ -317,6 +327,8 @@
             status('このPDFから文字を取り出せませんでした（画像として保存されたPDFの可能性）。明細画面をコピーして「テキスト貼り付け」をお試しください。', 'error');
             return;
           }
+          // カード会社を本文/ファイル名から判定してカード名に
+          lastSource = detectIssuerText(text) || (/^statement/i.test(file.name) ? '楽天カード' : lastSource);
           setMode('text');
           $('paste-input').value = text;
           analyzeText(text);
@@ -345,6 +357,21 @@
       }
     }
     return null;
+  }
+
+  // PDF等のテキスト本文からカード会社を推定
+  function detectIssuerText(text) {
+    const t = String(text || '');
+    if (/楽天カード/.test(t)) return '楽天カード';
+    if (/三井住友カード|ｖｐａｓｓ|vpass/i.test(t)) return '三井住友カード';
+    if (/三菱ＵＦＪ|ＭＵＦＧ|mufg|ニコス|nicos|dcカード/i.test(t)) return 'MUFG/ニコス';
+    if (/ｊｃｂ|jcb/i.test(t)) return 'JCB';
+    if (/イオンカード|イオン銀行|aeon/i.test(t)) return 'イオンカード';
+    if (/ＰａｙＰａｙカード|paypayカード/i.test(t)) return 'PayPayカード';
+    if (/エポス|epos/i.test(t)) return 'エポスカード';
+    if (/セゾン|saison/i.test(t)) return 'セゾンカード';
+    if (/ＪＲＥ|ビューカード|view/i.test(t)) return 'ビューカード';
+    return '';
   }
 
   // 見出しからカード会社を推定（分かればカード別内訳のラベルに使う）
@@ -553,10 +580,11 @@
       const desc = (t.desc || '').trim() || '(名称なし)';
       const date = normalizeDate(t.date || '');
       const source = (t.source || lastSource || '').trim() || '（不明）';
-      // 日付が読めない明細は、ファイル名の年月（例 202606）で月を補完
+      const bmonth = (t.fmonth || lastMonth) || '';   // 請求月（ファイル名の年月）
+      // 利用日ベースの月。日付が読めなければ請求月で補完
       const mo = monthOf(date);
-      const month = mo !== '不明' ? mo : ((t.fmonth || lastMonth) || '不明');
-      transactions.push({ date, desc, amount: t.amount, key: normalizeKey(desc), category: categorize(desc), source, month });
+      const month = mo !== '不明' ? mo : (bmonth || '不明');
+      transactions.push({ date, desc, amount: t.amount, key: normalizeKey(desc), category: categorize(desc), source, month, bmonth });
     }
     if (transactions.length === 0) {
       status('有効な明細が見つかりませんでした。内容や列の対応づけを確認してください。', 'error');
@@ -835,8 +863,9 @@
         const h = v / total * barH;
         segs += `<div class="seg" style="height:${h}px;background:${CAT_COLORS[c] || '#9e9e9e'}" title="${m} ${escapeHtml(c)}: ${yen(v)}"></div>`;
       }
+      const sel = monthSelected === m ? ' selected' : '';
       bars += `
-        <div class="mbar">
+        <div class="mbar clickable${sel}" data-month="${m}">
           <div class="mbar-val">${yen(total)}</div>
           <div class="stack" style="height:${barH}px">${segs}</div>
           <div class="mbar-label">${m.replace(/^\d{4}-/, '')}月</div>
@@ -846,6 +875,17 @@
     const legend = '<div class="legend">' + cats.map(c =>
       `<span class="legend-item"><span class="dot" style="background:${CAT_COLORS[c] || '#9e9e9e'}"></span>${escapeHtml(c)}</span>`).join('') + '</div>';
     $('chart-cat-trend').innerHTML = bars + legend;
+    renderTrendDetail();
+  }
+
+  function renderTrendDetail() {
+    const el = $('trend-detail');
+    if (!el) return;
+    if (!monthSelected) { el.innerHTML = ''; return; }
+    const list = transactions.filter(t => monthKey(t) === monthSelected);
+    const sum = list.reduce((a, t) => a + t.amount, 0);
+    const label = monthSelected.replace(/^(\d{4})-/, '$1年') + '月';
+    el.innerHTML = `<div class="detail-head">${escapeHtml(label)}の内訳（金額順） 計 ${yen(sum)} ／ ${list.length}件 <button class="detail-close" data-close="trend">✕</button></div>` + detailRows(list);
   }
 
   // ---- よく使う店ランキング -----------------------------------------------
@@ -980,6 +1020,24 @@
   const btnClear = $('btn-clear');
   if (btnClear) btnClear.addEventListener('click', clearData);
   $('month-filter').addEventListener('change', render);
+  function updateGroupUI() {
+    const billing = groupMode === 'billing';
+    $('grp-billing').classList.toggle('active', billing);
+    $('grp-usage').classList.toggle('active', !billing);
+    $('grp-note').textContent = billing
+      ? '「請求月」表示：明細（ファイル名の年月）ごとに集計。カードの請求額と一致します。'
+      : '「利用日」表示：実際に使った日で集計（請求月とは月がずれます）。';
+  }
+  function setGroupMode(mode) {
+    if (groupMode === mode) return;
+    groupMode = mode; saveGroupMode();
+    monthSelected = ''; catSelected = '';
+    updateGroupUI();
+    if (transactions.length) { buildMonthFilter(); render(); }
+  }
+  $('grp-billing').addEventListener('click', () => setGroupMode('billing'));
+  $('grp-usage').addEventListener('click', () => setGroupMode('usage'));
+  updateGroupUI();
   // 棒グラフのタップで内訳（金額順）をトグル表示
   $('chart-category').addEventListener('click', (e) => {
     const row = e.target.closest('[data-cat]');
@@ -988,19 +1046,22 @@
     catSelected = (catSelected === c) ? '' : c;
     renderCategoryChart(currentTx().filter(t => t.amount > 0));
   });
-  $('chart-month').addEventListener('click', (e) => {
-    const bar = e.target.closest('[data-month]');
-    if (!bar) return;
-    const m = bar.getAttribute('data-month');
+  const selectMonth = (m) => {
     monthSelected = (monthSelected === m) ? '' : m;
-    renderMonthChart();
+    renderMonthChart();       // #month-detail を更新
+    renderCategoryTrend();    // #trend-detail を更新
+  };
+  $('chart-month').addEventListener('click', (e) => {
+    const bar = e.target.closest('[data-month]'); if (bar) selectMonth(bar.getAttribute('data-month'));
+  });
+  $('chart-cat-trend').addEventListener('click', (e) => {
+    const bar = e.target.closest('[data-month]'); if (bar) selectMonth(bar.getAttribute('data-month'));
   });
   $('cat-detail').addEventListener('click', (e) => {
     if (e.target.closest('[data-close]')) { catSelected = ''; renderCategoryChart(currentTx().filter(t => t.amount > 0)); }
   });
-  $('month-detail').addEventListener('click', (e) => {
-    if (e.target.closest('[data-close]')) { monthSelected = ''; renderMonthChart(); }
-  });
+  $('month-detail').addEventListener('click', (e) => { if (e.target.closest('[data-close]')) selectMonth(monthSelected); });
+  $('trend-detail').addEventListener('click', (e) => { if (e.target.closest('[data-close]')) selectMonth(monthSelected); });
   $('opt-header').addEventListener('change', () => showMapping());
   ['col-date', 'col-desc', 'col-amount'].forEach(id =>
     $(id).addEventListener('change', () => renderPreview($('opt-header').checked)));
