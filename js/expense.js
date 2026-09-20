@@ -74,6 +74,7 @@
   };
 
   const OVERRIDES_KEY = 'expense.categoryOverrides.v1';
+  const TX_KEY = 'expense.transactions.v1';
 
   // ---- 状態 ---------------------------------------------------------------
   let rawRows = [];      // CSV全行（配列の配列）
@@ -92,6 +93,19 @@
   }
   function saveOverrides() {
     try { localStorage.setItem(OVERRIDES_KEY, JSON.stringify(overrides)); } catch {}
+  }
+  // 読み込んだ明細を端末内に保存／復元／消去（外部送信なし）
+  function saveTransactions() {
+    try { localStorage.setItem(TX_KEY, JSON.stringify(transactions)); } catch {}
+  }
+  function loadSavedTransactions() {
+    try {
+      const a = JSON.parse(localStorage.getItem(TX_KEY));
+      return Array.isArray(a) ? a : null;
+    } catch { return null; }
+  }
+  function clearSavedData() {
+    try { localStorage.removeItem(TX_KEY); } catch {}
   }
   function status(msg, type = '') {
     const el = $('status');
@@ -464,12 +478,19 @@
       return false;
     }
     status('');
+    saveTransactions();       // 端末内に保存（外部送信なし）
+    showResults();
+    return true;
+  }
+
+  // 保存済みデータで結果を表示（明細を transactions に入れてから呼ぶ）
+  function showResults() {
     drop.classList.add('hidden');
+    $('ingest').classList.add('hidden');
     $('mapping').classList.add('hidden');
     $('results').classList.remove('hidden');
     buildMonthFilter();
     render();
-    return true;
   }
 
   function analyze() {
@@ -728,6 +749,7 @@
         overrides[t.key] = t.category;
         transactions.forEach(x => { if (x.key === t.key) x.category = t.category; });
         saveOverrides();
+        saveTransactions();
         render();
       });
     });
@@ -771,7 +793,28 @@
       // URLから機微情報を消す
       try { history.replaceState(null, '', location.pathname); } catch {}
       analyzeText(shared);
+      return true;
     }
+    return false;
+  }
+
+  // 保存済みの明細があれば復元して結果を表示
+  function restoreSaved() {
+    const saved = loadSavedTransactions();
+    if (saved && saved.length) {
+      transactions = saved;
+      showResults();
+      status(`前回の${saved.length}件を復元しました（この端末に保存）。`);
+      return true;
+    }
+    return false;
+  }
+
+  // データ消去（確認あり）
+  function clearData() {
+    if (!confirm('保存した明細データをこの端末から消去します。よろしいですか？（カテゴリのルールは残ります）')) return;
+    clearSavedData();
+    reset();
   }
 
   // ---- イベント -----------------------------------------------------------
@@ -783,6 +826,8 @@
   if (help) help.addEventListener('click', () => $('help-body').classList.toggle('hidden'));
   $('btn-analyze').addEventListener('click', analyze);
   $('btn-reset').addEventListener('click', reset);
+  const btnClear = $('btn-clear');
+  if (btnClear) btnClear.addEventListener('click', clearData);
   $('month-filter').addEventListener('change', render);
   $('opt-header').addEventListener('change', () => showMapping());
   ['col-date', 'col-desc', 'col-amount'].forEach(id =>
@@ -801,6 +846,6 @@
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
-  // 共有・ショートカットからの取り込み
-  ingestFromLocation();
+  // 起動時：共有/ショートカットの取り込みを優先、なければ保存済みデータを復元
+  if (!ingestFromLocation()) restoreSaved();
 })();
