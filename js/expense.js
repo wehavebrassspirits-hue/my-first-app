@@ -6,7 +6,7 @@
   // 加盟店名に含まれるキーワード → カテゴリ。上から順にマッチ。
   const CATEGORIES = [
     '食費', '外食・カフェ', '交通', 'ショッピング', '娯楽・サブスク',
-    '通信', '光熱・水道', '医療・薬', '教育', '公共・保険', 'その他'
+    '通信', '光熱・水道', '医療・薬', '教育', '公共・保険', '投資・積立', 'その他'
   ];
 
   // キーワードは小文字・NFKC正規化した店名に対して部分一致で判定される。
@@ -25,6 +25,8 @@
       'スーパー', 'マート', 'mart', 'イオン', 'aeon', 'ライフ', 'life', 'ヤオコー', 'マルエツ', 'サミット', 'コストコ', 'costco', '業務スーパー', '肉のハナマサ',
       'まいばすけっと', 'seiyu', '西友', 'せいゆう', 'gyomu', 'いなげや', 'オーケー', 'ok store', 'ベルク', 'ヤマナカ', 'アピタ', 'ピアゴ', 'カスミ', 'ヨークベニマル', 'マックスバリュ', 'maxvalu',
       'コンビニ', 'セブンイレブン', 'セブン-', '7-eleven', 'seven', 'ローソン', 'lawson', 'ファミリーマート', 'ファミマ', 'familymart', 'ミニストップ', 'ministop', 'デイリーヤマザキ', 'セイコーマート', 'ニューデイズ', 'newdays', 'ポプラ',
+      'ベイシア', 'beisia', 'とりせん', 'カスミ', 'ヨークタウン', 'フレッセイ',
+      '自販機', '自動販売', '飲料', 'コカ・コーラ', 'コカコーラ', 'ダイドー', 'ドリンコ', 'ヤクルト',
       'コープ', 'coop', '生協', 'カルディ', 'kaldi', '成城石井', 'やまや', '八百屋', '青果', '精肉', '鮮魚', 'ベーカリー', 'パン屋', 'bakery', '酒', 'リカー', 'liquor', 'オーケーストア',
       'ドンキ', 'ドン.キホーテ', 'ドン・キホーテ', 'ローソンストア100', 'ロピア',
     ]],
@@ -35,7 +37,9 @@
       'タクシー', 'taxi', 'go ', 'ｇｏ', 'didi', 'uber', 'newmo',
       'eneos', 'エネオス', 'ｴﾈｵｽ', '出光', 'idemitsu', 'コスモ石油', 'shell', 'シェル', 'ガソリン', 'apollostation',
       'etc', '高速道路', 'nexco', '首都高', 'タイムズ', 'times', '駐車', 'パーキング', 'parking', 'リパーク', '三井のリパーク', 'akippa', 'レンタカー',
-      'バス', ' bus', '高速バス',
+      'バス', ' bus', '高速バス', '電車', '運賃',
+      'サービスエリア', 'パーキングエリア', 'pa上り', 'pa下り', '上り線', '下り線',
+      'オートアールズ', 'オートバックス', 'autobacs', 'イエローハット', 'カー用品', '車検', 'ガソリンスタンド',
     ]],
     ['通信', [
       'docomo', 'ドコモ', 'ﾄﾞｺﾓ', 'au', 'kddi', 'softbank', 'ソフトバンク', 'ｿﾌﾄﾊﾞﾝｸ', '楽天モバイル', 'rakuten mobile', 'ahamo', 'povo', 'linemo', 'uqモバイル', 'uq ',
@@ -51,26 +55,30 @@
       'apple.com', 'apple ', 'itunes', 'icloud', 'google play', 'google*', 'google ', 'playstation', 'psn', 'nintendo', '任天堂', 'steam', 'ea ', 'エピック', 'epic',
       'adobe', 'chatgpt', 'openai', 'anthropic', 'claude', 'canva', 'dropbox', 'notion', 'microsoft', 'office365', 'microsoft365', 'ms365',
       '映画', 'cinema', 'toho', 'イオンシネマ', '109シネマ', 'ユナイテッド', 'カラオケ', 'ビッグエコー', 'まねきねこ', 'ゲーム', 'game', 'ジム', 'gym', 'フィットネス', 'エニタイム', 'anytime', 'chocozap', 'ちょこざっぷ', 'ライザップ', 'コナミスポーツ', 'ゴルフ', 'dmm', 'fanza',
+      'ユーネクスト', 'アソビュー', 'asoview', 'アソビュ', 'ハイランドパーク', 'ランドパーク', '遊園地', 'テーマパーク', '動物園', '水族館', '博物館', '美術館', '温泉', 'スパ', 'プール', 'キャンプ', 'ボウリング', 'ラウンドワン', 'レジャー', '観光', '入園', '入館',
     ]],
     ['ショッピング', [
       'amazon', 'アマゾン', 'ｱﾏｿﾞﾝ', 'amzn', '楽天市場', 'rakuten', '楽天', 'ﾗｸﾃﾝ', 'yahoo', 'ヤフー', 'paypayモール', 'paypayフリマ', 'メルカリ', 'mercari', 'ラクマ', 'qoo10', 'shein', 'temu', 'aliexpress',
       'zozo', 'ゾゾ', 'ユニクロ', 'uniqlo', 'ｸﾞﾛｰﾊﾞﾙ', 'gu ', 'ジーユー', '無印', 'muji', 'しまむら', 'ワークマン', 'ハニーズ', 'ライトオン', 'アダストリア', 'gap', 'zara', 'h&m', 'ヨドバシ', 'yodobashi', 'ビックカメラ', 'ヤマダ', 'yamada', 'ケーズ', 'エディオン', 'ジョーシン', 'ノジマ',
       'ニトリ', 'nitori', 'ikea', 'イケア', '無印良品', 'カインズ', 'コーナン', 'ビバホーム', 'ホームセンター', 'dcm', 'ダイソー', 'daiso', 'セリア', 'seria', 'キャンドゥ', '3コインズ', '100円', 'apple store', '書店', '書店', 'ヴィレッジ', '雑貨', 'ロフト', 'loft', 'ハンズ', '東急ハンズ', 'plaza', 'フランフラン', 'コスメ', 'アットコスメ', '化粧品', 'ハンドメイド', 'minne', 'creema',
       'ヨドバシ.com', 'raku', '花', 'flower', 'ペット', 'petco', 'ペットショップ',
+      'コジマ', 'kojima', 'トイザ', 'ベビーザ', 'ザらス', 'toysrus', 'アカチャンホンポ', '赤ちゃん本舗', '西松屋', 'ベビー用品',
     ]],
     ['医療・薬', [
       '病院', 'クリニック', '医院', '歯科', 'デンタル', '内科', '外科', '皮膚科', '眼科', '耳鼻', '整形', '接骨', '整骨', '鍼', 'クリニ',
       '薬局', 'ﾔﾂｷﾖｸ', 'ドラッグ', 'drug', 'マツモトキヨシ', 'マツキヨ', 'ウエルシア', 'welcia', 'サンドラッグ', 'ツルハ', 'tsuruha', 'ココカラ', 'スギ薬局', 'スギヤッキョク', 'クリエイト', 'トモズ', 'かんぽ薬', 'コスモス', 'ウォンツ',
+      'クスリ', 'くすり', 'クスリのアオキ', 'カワチ', 'セイムス', 'ダイコク', 'キリン堂', 'クオール', 'アイン薬', '調剤',
     ]],
     ['教育', ['学校', '大学', '塾', 'ゼミ', '予備校', 'スクール', 'school', '英会話', '英語', 'レッスン', '教室', '書籍', 'benesse', 'ベネッセ', '進研', 'udemy', 'kindle', '参考書', 'z会', 'スタディ', 'study', '保育', '幼稚園', '習い事']],
-    ['公共・保険', ['保険', '生命', '損保', 'ほけん', '税', '年金', '区役所', '市役所', '町役場', '県税', '都税', '市税', 'nhk', '受信料', '振込', 'atm', '手数料', '会費', '年会費', 'ふるさと納税', 'ふるさとチョイス', 'さとふる', '楽天ふるさと']],
+    ['公共・保険', ['保険', '生命', '損保', 'ほけん', '税', '年金', '区役所', '市役所', '町役場', '市民課', '証明書', '発行センター', '県税', '都税', '市税', 'nhk', '受信料', '振込', 'atm', '手数料', '会費', '年会費', 'ふるさと納税', 'ふるさとチョイス', 'さとふる', '楽天ふるさと']],
+    ['投資・積立', ['証券', 'sbi証券', '楽天証券', 'マネックス', '松井証券', 'auカブコム', '投信', '投資信託', '積立', 'つみたて', 'nisa', 'ニーサ', 'ideco', 'イデコ', '純金', '金積立', 'ビットコイン', '暗号資産', 'コインチェック', 'bitflyer', 'ｆｘ']],
   ];
 
   const CAT_COLORS = {
     '食費': '#4caf50', '外食・カフェ': '#ff9800', '交通': '#2196f3',
     'ショッピング': '#e91e63', '娯楽・サブスク': '#9c27b0', '通信': '#00bcd4',
     '光熱・水道': '#ff5722', '医療・薬': '#f44336', '教育': '#795548',
-    '公共・保険': '#607d8b', 'その他': '#9e9e9e'
+    '公共・保険': '#607d8b', '投資・積立': '#3f51b5', 'その他': '#9e9e9e'
   };
 
   const OVERRIDES_KEY = 'expense.categoryOverrides.v1';
@@ -78,8 +86,9 @@
 
   // ---- 状態 ---------------------------------------------------------------
   let rawRows = [];      // CSV全行（配列の配列）
-  let transactions = []; // {date, desc, amount, category, key}
+  let transactions = []; // {date, desc, amount, category, key, source}
   let overrides = loadOverrides();
+  let lastSource = '';   // 単一ファイル/貼り付け時のカード名（＝ファイル名等）
 
   // ---- DOM ----------------------------------------------------------------
   const $ = (id) => document.getElementById(id);
@@ -249,13 +258,14 @@
       status(`解析中… (${i + 1}/${files.length}) ${f.name}`);
       try {
         const buf = await readArrayBuffer(f);
+        const label = f.name.replace(/\.[^.]+$/, ''); // 拡張子を除いたファイル名
         let tuples = [];
         if (isPdf(f, buf)) {
           const text = await extractPdfText(buf);
-          tuples = parseStatementText(text);
+          tuples = parseStatementText(text).map(t => ({ ...t, source: label }));
         } else {
           const rows = parseCSV(decodeBuffer(buf));
-          tuples = csvRowsToTuples(rows);
+          tuples = csvRowsToTuples(rows, label);
         }
         if (tuples.length) all.push(...tuples);
         else skipped.push(f.name);
@@ -279,6 +289,7 @@
   function handleFile(file) {
     if (!file) return;
     status('読み込み中…');
+    lastSource = file.name.replace(/\.[^.]+$/, '');
     readArrayBuffer(file).then(async (buf) => {
       try {
         if (isPdf(file, buf)) {
@@ -304,19 +315,38 @@
     }).catch(() => status('ファイルを読めませんでした。', 'error'));
   }
 
-  // CSV行を、見出し・列を自動推定して {date,desc,amount} に変換（複数ファイル用・非対話）
-  function csvRowsToTuples(rows) {
+  // カード区切り行の判定（例: 「氏名 様, 4980-11**-****-****, カード名」）
+  function cardHeaderName(r) {
+    for (const cell of r) {
+      const s = String(cell || '');
+      if (/[\d]{3,4}[-\s]?[\d]{0,4}[\*＊]{2,}/.test(s) || /[\*＊]{2,}-[\*＊]{2,}/.test(s)) {
+        // マスクされたカード番号を含む行 → カード名（数字・記号を含まないセル）を探す
+        const nameCell = r.find(c => /[A-Za-z぀-ヿ一-鿿]/.test(String(c || '')) &&
+          !/様|さん/.test(String(c || '')) && !/[\*＊]/.test(String(c || '')));
+        return (nameCell && String(nameCell).trim()) || 'カード' + s.replace(/[^0-9]/g, '').slice(0, 4);
+      }
+    }
+    return null;
+  }
+
+  // CSV行を、見出し・列を自動推定して {date,desc,amount,source} に変換（複数ファイル用・非対話）
+  // カード区切り行があればカード名を source に付与。無ければ引数 source（ファイル名等）を使う。
+  function csvRowsToTuples(rows, source) {
     if (!rows || rows.length === 0) return [];
-    // 先頭行の推定金額列が数値でなければ見出しとみなす
-    const g0 = guessColumns(rows, false);
-    const firstAmount = g0.amountCol >= 0 ? parseAmount(rows[0][g0.amountCol]) : NaN;
-    const hasHeader = isNaN(firstAmount);
-    const g = guessColumns(rows, hasHeader);
-    const body = hasHeader ? rows.slice(1) : rows;
+    const g = guessColumns(rows, true);
     if (g.amountCol < 0) return [];
-    return body.map(r => ({
-      date: r[g.dateCol] || '', desc: r[g.descCol] || '', amount: parseAmount(r[g.amountCol])
-    }));
+    const out = [];
+    let currentCard = source || '';
+    for (const r of rows) {
+      const card = cardHeaderName(r);
+      if (card) { currentCard = card; continue; }        // カード区切り行
+      const amount = parseAmount(r[g.amountCol]);
+      if (isNaN(amount) || amount === 0) continue;         // 金額なし＝見出し/合計行
+      const date = (r[g.dateCol] || '').trim();
+      if (!date) continue;                                 // 日付なし＝合計行等はスキップ
+      out.push({ date, desc: r[g.descCol] || '', amount, source: currentCard || source || '' });
+    }
+    return out;
   }
 
   // ---- PDF明細の文字抽出（端末内で処理・外部送信なし） ---------------------
@@ -471,7 +501,8 @@
       if (isNaN(t.amount) || t.amount === 0) continue;
       const desc = (t.desc || '').trim() || '(名称なし)';
       const date = normalizeDate(t.date || '');
-      transactions.push({ date, desc, amount: t.amount, key: normalizeKey(desc), category: categorize(desc) });
+      const source = (t.source || lastSource || '').trim() || '（不明）';
+      transactions.push({ date, desc, amount: t.amount, key: normalizeKey(desc), category: categorize(desc), source });
     }
     if (transactions.length === 0) {
       status('有効な明細が見つかりませんでした。内容や列の対応づけを確認してください。', 'error');
@@ -539,6 +570,7 @@
       `<span class="sum-sub">${tx.length}件 / 平均 ${yen(total / (tx.length || 1))}</span>`;
 
     renderStats(tx);
+    renderCards(tx);
     renderCategoryChart(spend);
     renderMonthChart();
     renderMonthTable();
@@ -569,6 +601,36 @@
     ];
     $('stats').innerHTML = tiles.map(([k, v]) =>
       `<div class="stat"><div class="stat-val">${v}</div><div class="stat-key">${k}</div></div>`).join('');
+  }
+
+  // ---- カード別内訳 -------------------------------------------------------
+  const CARD_COLORS = ['#2472c8', '#e91e63', '#4caf50', '#ff9800', '#9c27b0', '#00bcd4', '#795548', '#607d8b', '#f44336', '#3f51b5'];
+  function renderCards(tx) {
+    const bySrc = {};
+    for (const t of tx) {
+      const s = t.source || '（不明）';
+      const g = bySrc[s] || (bySrc[s] = { sum: 0, count: 0 });
+      g.sum += t.amount; g.count += 1;
+    }
+    const entries = Object.entries(bySrc).sort((a, b) => b[1].sum - a[1].sum);
+    // カードが1種類だけなら内訳カードは隠す
+    const wrap = $('cards-card');
+    if (entries.length <= 1) { if (wrap) wrap.classList.add('hidden'); return; }
+    if (wrap) wrap.classList.remove('hidden');
+    const total = entries.reduce((a, e) => a + e[1].sum, 0) || 1;
+    let html = '<div class="bars">';
+    entries.forEach(([name, g], i) => {
+      const pct = g.sum / total * 100;
+      const color = CARD_COLORS[i % CARD_COLORS.length];
+      html += `
+        <div class="bar-row">
+          <div class="bar-label" title="${escapeHtml(name)}"><span class="dot" style="background:${color}"></span>${escapeHtml(name)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div></div>
+          <div class="bar-val">${yen(g.sum)} <span class="bar-pct">${pct.toFixed(0)}% / ${g.count}件</span></div>
+        </div>`;
+    });
+    html += '</div>';
+    $('cards').innerHTML = html;
   }
 
   function renderCategoryChart(tx) {
@@ -821,7 +883,7 @@
   fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
   $('mode-csv').addEventListener('click', () => setMode('csv'));
   $('mode-text').addEventListener('click', () => setMode('text'));
-  $('btn-parse-text').addEventListener('click', () => analyzeText($('paste-input').value));
+  $('btn-parse-text').addEventListener('click', () => { lastSource = '貼り付け'; analyzeText($('paste-input').value); });
   const help = $('help-toggle');
   if (help) help.addEventListener('click', () => $('help-body').classList.toggle('hidden'));
   $('btn-analyze').addEventListener('click', analyze);
