@@ -1,6 +1,8 @@
 /* カード明細 支出分析 — Service Worker（オフライン動作用）
-   明細データは一切キャッシュ・送信しません。アプリ本体の静的ファイルのみをキャッシュします。 */
-const CACHE = 'expense-v4';
+   明細データは一切キャッシュ・送信しません。アプリ本体の静的ファイルのみをキャッシュします。
+   デプロイ後の取りこぼしを防ぐため、同一オリジンのGETは「ネットワーク優先・キャッシュ更新」。
+   （オフライン時のみキャッシュにフォールバック） */
+const CACHE = 'expense-v5';
 const ASSETS = [
   'expense.html',
   'css/expense.css',
@@ -23,13 +25,22 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// キャッシュ優先。共有ターゲット等のナビゲーションはネットワーク→キャッシュにフォールバック。
+// ネットワーク優先：常に最新を取りに行き、成功したらキャッシュも更新。
+// 失敗（オフライン）時のみキャッシュ、なければトップページを返す。
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
-  if (req.mode === 'navigate') {
-    e.respondWith(fetch(req).catch(() => caches.match('expense.html')));
-    return;
-  }
-  e.respondWith(caches.match(req).then((hit) => hit || fetch(req)));
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return; // 他オリジンは介入しない
+  e.respondWith(
+    fetch(req)
+      .then((res) => {
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+        }
+        return res;
+      })
+      .catch(() => caches.match(req).then((hit) => hit || caches.match('expense.html')))
+  );
 });
