@@ -127,6 +127,47 @@
   function clearSavedData() {
     try { localStorage.removeItem(TX_KEY); } catch {}
   }
+  // ---- バックアップ書き出し／読み込み（端末間の手動移行・外部送信なし） ----
+  function exportBackup() {
+    if (!transactions.length) { status('先にデータを読み込んでください。', 'error'); return; }
+    const data = { app: 'expense', s: TX_SCHEMA, exportedAt: new Date().toISOString(), transactions, overrides };
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const d = new Date();
+    const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+    const a = document.createElement('a');
+    a.href = url; a.download = `expense-backup-${stamp}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    status(`バックアップを書き出しました（${transactions.length}件）。このファイルを別端末で「バックアップから復元」してください。`);
+  }
+
+  function importBackup(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        const tx = Array.isArray(data) ? data : (data && data.transactions);
+        if (!Array.isArray(tx) || tx.length === 0) { status('このファイルには明細データが含まれていません。', 'error'); return; }
+        if (data && data.s && data.s !== TX_SCHEMA) {
+          status('バックアップのバージョンが異なります。元の端末でファイルを読み込み直して書き出してください。', 'error'); return;
+        }
+        if (data && data.overrides && typeof data.overrides === 'object') {
+          overrides = Object.assign({}, overrides, data.overrides); saveOverrides();
+        }
+        transactions = tx;
+        saveTransactions();
+        showResults();
+        status(`バックアップから${tx.length}件を復元しました（この端末に保存）。`);
+      } catch (err) {
+        status('バックアップを読み込めませんでした（ファイルが壊れている可能性）。', 'error');
+      }
+    };
+    reader.onerror = () => status('ファイルを読めませんでした。', 'error');
+    reader.readAsText(file);
+  }
+
   function loadGroupMode() {
     try { return localStorage.getItem('expense.groupMode') === 'usage' ? 'usage' : 'billing'; } catch { return 'billing'; }
   }
@@ -1029,6 +1070,10 @@
   $('btn-reset').addEventListener('click', reset);
   const btnClear = $('btn-clear');
   if (btnClear) btnClear.addEventListener('click', clearData);
+  const btnExport = $('btn-export');
+  if (btnExport) btnExport.addEventListener('click', exportBackup);
+  const backupFile = $('backup-file');
+  if (backupFile) backupFile.addEventListener('change', (e) => { importBackup(e.target.files[0]); e.target.value = ''; });
   $('month-filter').addEventListener('change', render);
   function updateGroupUI() {
     const billing = groupMode === 'billing';
