@@ -56,6 +56,14 @@
         </div>
       </div>
 
+      <p class="backup-line">
+        💾 別端末（PC等）で書き出した<strong>バックアップ(.json)</strong>から復元:
+        <label class="btn ghost file-btn">
+          バックアップを選ぶ
+          <input id="backup-file" type="file" accept=".json,application/json" hidden>
+        </label>
+      </p>
+
       <div id="paste-area" class="paste-area hidden">
         <p class="field-hint">
           カードアプリやWeb明細の画面をコピーして、下に貼り付けてください。
@@ -145,6 +153,7 @@
           </div>
           <select id="month-filter" class="select"></select>
           <button id="btn-reset" class="btn ghost">別のファイルを読み込む</button>
+          <button id="btn-export" class="btn ghost">バックアップ書出 ⬇️</button>
           <button id="btn-clear" class="btn danger-btn">データを消去 🗑️</button>
         </div>
       </div>
